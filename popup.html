@@ -14,6 +14,9 @@
   <div class="toolbar">
     <button id="btnSelectAll" title="전체 선택">전체 선택</button>
     <button id="btnDeselectAll" title="선택 해제">선택 해제</button>
+    <label class="toggle-label" title="HTML을 구조화된 텍스트로 변환">
+      <input type="checkbox" id="chkStructuredText"> structured_text
+    </label>
     <button id="btnDownload" title="선택 항목 다운로드" disabled>
       📥 다운로드 (<span id="selectedCount">0</span>개)
     </button>
@@ -39,6 +42,7 @@
   </div>
 
   <script src="lib/jszip.min.js"></script>
+  <script src="structured-text.js"></script>
   <script src="popup.js"></script>
 </body>
 </html>

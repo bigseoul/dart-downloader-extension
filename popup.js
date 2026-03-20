@@ -313,7 +313,14 @@ async function downloadSelected() {
           .filter(Boolean)
           .join("_");
         const fullName = filePrefix ? `${filePrefix}_${safeName}` : safeName;
-        zip.file(`${fullName}.html`, response.html);
+
+        const useStructured = document.getElementById("chkStructuredText").checked;
+        if (useStructured) {
+          const txt = buildStructuredText(response.html, safeName);
+          zip.file(`${fullName}.txt`, txt);
+        } else {
+          zip.file(`${fullName}.html`, response.html);
+        }
       }
     } catch (e) {
       console.error(`Failed to fetch: ${node.text}`, e);

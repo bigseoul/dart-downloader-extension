@@ -1,8 +1,3 @@
-아래 내용을 `/Users/daegyunggang/Documents/workspace/dart-downloader-extension/PRD.md`로 저장해주세요.
-
----
-
-```markdown
 # DART 문서 다운로더 — Product Requirements Document (PRD)
 
 > **Version** 1.0  
@@ -46,12 +41,12 @@ DART 공시 문서(사업보고서, 감사보고서 등)는 웹 뷰어를 통해
 ## 5. 대상 사이트 및 기술 환경 (Target Environment)
 
 | 항목 | 내용 |
-|---|---|
-| **대상 URL** | `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=...` |
-| **페이지 구조** | 좌측: jstree 기반 문서 목차 트리 (`#listTree`), 우측: iframe(`#ifrm`) 콘텐츠 뷰어 |
-| **트리 라이브러리** | jstree (jQuery 플러그인) |
-| **콘텐츠 로드 방식** | `/report/viewer.do?rcpNo=&dcmNo=&eleId=&offset=&length=&dtd=` |
-| **노드 메타데이터** | 각 jstree 노드의 `original` 속성에 `rcpNo`, `dcmNo`, `eleId`, `offset`, `length`, `dtd` 저장 |
++|---|---|
++| **대상 URL** | `https://dart.fss.or.kr/dsaf001/main.do?rcpNo=...` |
++| **페이지 구조** | 좌측: jstree 기반 문서 목차 트리 (`#listTree`), 우측: iframe(`#ifrm`) 콘텐츠 뷰어 |
++| **트리 라이브러리** | jstree (jQuery 플러그인) |
++| **콘텐츠 로드 방식** | `/report/viewer.do?rcpNo=&dcmNo=&eleId=&offset=&length=&dtd=` |
++| **노드 메타데이터** | 각 jstree 노드의 `original` 속성에 `rcpNo`, `dcmNo`, `eleId`, `offset`, `length`, `dtd` 저장 |
 
 ### 5.1. 트리 구조 예시
 
@@ -139,14 +134,14 @@ GET https://dart.fss.or.kr/report/viewer.do
 ## 8. 비기능 요구사항 (Non-Functional Requirements)
 
 | 항목 | 요구사항 |
-|---|---|
-| **플랫폼** | Chrome 확장 프로그램 (Manifest V3) |
-| **대상 브라우저** | Chrome 88+ |
-| **권한** | `activeTab`, `scripting`, `downloads` |
-| **호스트 권한** | `https://dart.fss.or.kr/*` |
-| **팝업 크기** | 너비 420px, 최대 높이 550px |
-| **성능** | 노드 134개 기준 트리 렌더링 100ms 이내 |
-| **에러 처리** | DART 페이지가 아닐 경우 안내 메시지, fetch 실패 시 해당 노드 건너뛰기 |
++|---|---|
++| **플랫폼** | Chrome 확장 프로그램 (Manifest V3) |
++| **대상 브라우저** | Chrome 88+ |
++| **권한** | `activeTab`, `scripting`, `downloads` |
++| **호스트 권한** | `https://dart.fss.or.kr/*` |
++| **팝업 크기** | 너비 420px, 최대 높이 550px |
++| **성능** | 노드 134개 기준 트리 렌더링 100ms 이내 |
++| **에러 처리** | DART 페이지가 아닐 경우 안내 메시지, fetch 실패 시 해당 노드 건너뛰기 |
 
 ---
 
@@ -200,13 +195,13 @@ dart-downloader-extension/
 ## 10. 엣지 케이스 및 에러 처리 (Edge Cases)
 
 | 상황 | 처리 |
-|---|---|
-| DART 문서 페이지가 아닌 탭에서 실행 | "DART 공시 문서 페이지에서 실행해주세요" 안내 |
-| jstree가 아직 로드되지 않음 | `document_idle` 주입으로 대부분 해결, 실패 시 에러 메시지 |
-| 특정 노드 HTML fetch 실패 | 해당 노드 건너뛰고 나머지 계속, 콘솔 에러 로그 |
-| 선택 노드 0개 상태에서 다운로드 | 버튼 `disabled`, 클릭 불가 |
-| 부모와 자식 동시 선택 | 부모가 선택된 경우 하위 자식은 중복 다운로드에서 제외 |
-| 파일명에 OS 금지 문자 | `\ / : * ? " < > |` → `_` 치환 |
++|---|---|
++| DART 문서 페이지가 아닌 탭에서 실행 | "DART 공시 문서 페이지에서 실행해주세요" 안내 |
++| jstree가 아직 로드되지 않음 | `document_idle` 주입으로 대부분 해결, 실패 시 에러 메시지 |
++| 특정 노드 HTML fetch 실패 | 해당 노드 건너뛰고 나머지 계속, 콘솔 에러 로그 |
++| 선택 노드 0개 상태에서 다운로드 | 버튼 `disabled`, 클릭 불가 |
++| 부모와 자식 동시 선택 | 부모가 선택된 경우 하위 자식은 중복 다운로드에서 제외 |
++| 파일명에 OS 금지 문자 | `\ / : * ? " < > |` → `_` 치환 |
 
 ---
 
@@ -230,10 +225,3 @@ dart-downloader-extension/
 - [ ] 다중 노드 선택 → ZIP 다운로드 확인
 - [ ] 부모/자식 중복 제거 확인
 - [ ] 에러 케이스 테스트 (비DART 페이지 등)
-```
-
----
-
-PRD 문서입니다. 앞서 분석한 DART 페이지의 실제 기술 구조(jstree, `viewer.do` API, `original` 메타데이터 등)를 모두 반영했습니다. 프로젝트 폴더에 `PRD.md`로 저장해주시면 됩니다. 
-
-수정이나 추가할 내용 있으면 말씀해주세요!

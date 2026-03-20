@@ -1,5 +1,26 @@
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE / Editor
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Node (if added later)
+node_modules/
+package-lock.json
+
+# Chrome Extension packaging
+*.pem
+*.crx
+*.zip
+
+# Tool-specific
 .playwright-mcp/
 .serena/
+
+# Test / temp files
 icons/test_write.txt
 icons/favicon.png
