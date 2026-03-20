@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "skills": {
+    "material-thinking": {
+      "source": "smithery.ai",
+      "sourceType": "well-known",
+      "computedHash": "c94f188f8367bee89ada5c22d863e0c4958ff539c98937cfa2c196f9dc839b31"
+    }
+  }
+}

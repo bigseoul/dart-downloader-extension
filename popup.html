@@ -6,38 +6,57 @@
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
-  <div class="header">
-    <h1>DART 문서 다운로더</h1>
-    <div class="header-info" id="docTitle"></div>
+
+  <!-- M3 Small Top App Bar -->
+  <header class="app-bar">
+    <span class="app-bar-title">DART 문서 다운로더</span>
+    <span class="app-bar-subtitle" id="docTitle"></span>
+  </header>
+
+  <!-- Toolbar: tree selection + expand/collapse controls -->
+  <div class="toolbar" role="toolbar" aria-label="트리 컨트롤">
+    <div class="toolbar-start">
+      <button class="chip chip--filled" id="btnSelectAll" title="전체 선택">전체 선택</button>
+      <button class="chip chip--outlined" id="btnDeselectAll" title="선택 해제">선택 해제</button>
+    </div>
+    <div class="toolbar-end">
+      <button class="icon-btn" id="btnExpandAll" title="모두 펼치기" aria-label="모두 펼치기">▼</button>
+      <button class="icon-btn" id="btnCollapseAll" title="모두 접기" aria-label="모두 접기">▶</button>
+    </div>
   </div>
 
-  <div class="toolbar">
-    <button id="btnSelectAll" title="전체 선택">전체 선택</button>
-    <button id="btnDeselectAll" title="선택 해제">선택 해제</button>
-    <label class="toggle-label" title="HTML을 구조화된 텍스트로 변환">
-      <input type="checkbox" id="chkStructuredText"> structured_text
-    </label>
-    <button id="btnDownload" title="선택 항목 다운로드" disabled>
-      📥 다운로드 (<span id="selectedCount">0</span>개)
-    </button>
-  </div>
-
-  <div id="loading" class="loading">
-    <div class="spinner"></div>
+  <!-- Loading state -->
+  <div id="loading" class="state-loading">
+    <div class="spinner" role="progressbar" aria-label="로딩 중"></div>
     <span>목차를 불러오는 중...</span>
   </div>
 
-  <div id="error" class="error" style="display:none;"></div>
+  <!-- Error state -->
+  <div id="error" class="state-error" style="display:none;" role="alert"></div>
 
-  <div id="treeContainer" class="tree-container" style="display:none;"></div>
+  <!-- Tree -->
+  <div id="treeContainer" class="tree-scroll" style="display:none;" role="tree"></div>
 
-  <div id="progressOverlay" class="progress-overlay" style="display:none;">
-    <div class="progress-box">
-      <div class="progress-title">다운로드 중...</div>
-      <div class="progress-bar-container">
-        <div class="progress-bar" id="progressBar"></div>
+  <!-- Bottom action bar -->
+  <div class="bottom-bar">
+    <label class="switch-wrap" title="structured text 형식으로 다운로드">
+      <input type="checkbox" id="chkStructuredText" class="switch-input">
+      <span class="switch-track" aria-hidden="true"></span>
+      <span class="switch-label-text">structured text</span>
+    </label>
+    <button class="btn-filled" id="btnDownload" disabled>
+      다운로드&nbsp;<span id="selectedCount">0</span>건
+    </button>
+  </div>
+
+  <!-- M3 Progress dialog (scrim + dialog) -->
+  <div id="progressOverlay" class="scrim" style="display:none;" role="dialog" aria-modal="true" aria-label="다운로드 진행">
+    <div class="dialog">
+      <p class="dialog-headline">다운로드 중...</p>
+      <div class="linear-track">
+        <div class="linear-bar" id="progressBar"></div>
       </div>
-      <div class="progress-text" id="progressText">0 / 0</div>
+      <p class="dialog-supporting" id="progressText">0 / 0</p>
     </div>
   </div>
 

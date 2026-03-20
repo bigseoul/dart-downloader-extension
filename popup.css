@@ -1,134 +1,226 @@
-* {
+/* ─── M3 Design Tokens ─── */
+:root {
+  /* Primary */
+  --md-primary:            #1b6ef3;
+  --md-on-primary:         #ffffff;
+  --md-primary-container:  #d6e3ff;
+  --md-on-primary-container: #001b3e;
+  /* Secondary */
+  --md-secondary-container: #dde3f9;
+  --md-on-secondary-container: #141b2c;
+  /* Surface */
+  --md-surface:                 #faf9fd;
+  --md-surface-container-low:   #f3f1f5;
+  --md-surface-container:       #efedf1;
+  --md-surface-container-high:  #e9e7ec;
+  /* On-surface */
+  --md-on-surface:         #1b1b1f;
+  --md-on-surface-variant: #44474f;
+  /* Outline */
+  --md-outline:         #74777f;
+  --md-outline-variant: #c4c6d0;
+  /* Error */
+  --md-error: #ba1a1a;
+  /* Scrim */
+  --md-scrim: rgba(0, 0, 0, 0.32);
+  /* Shape */
+  --md-shape-xs:   4px;
+  --md-shape-sm:   8px;
+  --md-shape-md:  12px;
+  --md-shape-lg:  16px;
+  --md-shape-xl:  28px;
+  --md-shape-full: 9999px;
+  /* Easing */
+  --md-easing-standard:   cubic-bezier(0.2, 0, 0, 1);
+  --md-easing-emphasized: cubic-bezier(0.05, 0.7, 0.1, 1.0);
+}
+
+/* ─── Reset ─── */
+*, *::before, *::after {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
 }
 
 body {
-  width: 420px;
-  max-height: 550px;
-  font-family: -apple-system, BlinkMacSystemFont, "Malgun Gothic", "맑은 고딕", sans-serif;
-  font-size: 13px;
-  color: #333;
+  width: 400px;
+  max-height: 560px;
+  font-family: "Google Sans", "Roboto", -apple-system, BlinkMacSystemFont,
+    "Malgun Gothic", sans-serif;
+  font-size: 14px;
+  color: var(--md-on-surface);
+  background: var(--md-surface);
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
-.header {
-  background: #1a3a5c;
-  color: #fff;
-  padding: 12px 16px;
+/* ─── M3 Small Top App Bar ─── */
+.app-bar {
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 12px 16px 10px;
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  min-height: 56px;
 }
 
-.header h1 {
-  font-size: 15px;
-  font-weight: 600;
-  margin-bottom: 4px;
+.app-bar-title {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1.4;
 }
 
-.header-info {
+.app-bar-subtitle {
   font-size: 11px;
-  color: #a0c4e8;
+  opacity: 0.85;
+  margin-top: 1px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.4;
 }
 
+/* ─── Toolbar ─── */
 .toolbar {
-  display: flex;
-  gap: 6px;
-  padding: 8px 12px;
-  background: #f5f5f5;
-  border-bottom: 1px solid #ddd;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: var(--md-surface-container-low);
+  border-bottom: 1px solid var(--md-outline-variant);
+  gap: 8px;
 }
 
-.toolbar button {
-  padding: 5px 10px;
-  font-size: 12px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  background: #fff;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.toolbar button:hover:not(:disabled) {
-  background: #e8e8e8;
-}
-
-.toggle-label {
+.toolbar-start,
+.toolbar-end {
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+/* ─── Assist Chips ─── */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 32px;
+  padding: 0 12px;
+  border-radius: var(--md-shape-full);
+  font-family: inherit;
   font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
   cursor: pointer;
-  margin-left: auto;
-  color: #555;
+  transition:
+    background var(--md-easing-standard) 150ms,
+    box-shadow var(--md-easing-standard) 150ms;
+  white-space: nowrap;
   user-select: none;
 }
 
-.toggle-label input {
-  accent-color: #1a73e8;
-  cursor: pointer;
+.chip--filled {
+  background: var(--md-secondary-container);
+  color: var(--md-on-secondary-container);
+  border: none;
 }
 
-#btnDownload {
-  margin-left: 6px;
-  background: #1a73e8;
-  color: #fff;
-  border-color: #1a73e8;
-  font-weight: 600;
+.chip--filled:hover {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 1px 3px rgba(0,0,0,0.08);
 }
 
-#btnDownload:hover:not(:disabled) {
-  background: #1557b0;
+.chip--outlined {
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  border: 1px solid var(--md-outline-variant);
 }
 
-#btnDownload:disabled {
-  background: #94bff8;
-  border-color: #94bff8;
-  cursor: not-allowed;
+.chip--outlined:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
 }
 
-.loading {
+/* ─── Icon Buttons ─── */
+.icon-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 40px;
-  color: #666;
+  width: 32px;
+  height: 32px;
+  font-size: 11px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--md-on-surface-variant);
+  cursor: pointer;
+  transition: background var(--md-easing-standard) 150ms;
+  flex-shrink: 0;
+}
+
+.icon-btn:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+}
+
+/* ─── Loading ─── */
+.state-loading {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 40px 24px;
+  color: var(--md-on-surface-variant);
+  font-size: 13px;
 }
 
 .spinner {
-  width: 20px;
-  height: 20px;
-  border: 2px solid #ddd;
-  border-top-color: #1a73e8;
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--md-outline-variant);
+  border-top-color: var(--md-primary);
   border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+  animation: spin 0.75s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.error {
-  padding: 16px;
-  color: #d93025;
+/* ─── Error ─── */
+.state-error {
+  flex: 1;
+  padding: 32px 24px;
+  color: var(--md-error);
+  font-size: 13px;
+  line-height: 1.6;
   text-align: center;
-  font-size: 12px;
 }
 
-.tree-container {
+/* ─── Tree Scroll Area ─── */
+.tree-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 4px 0;
+  overscroll-behavior: contain;
 }
 
-/* 트리 노드 */
+.tree-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+.tree-scroll::-webkit-scrollbar-thumb {
+  background: var(--md-outline-variant);
+  border-radius: 3px;
+}
+
+.tree-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--md-outline);
+}
+
+/* ─── Tree Nodes ─── */
 .tree-node {
   user-select: none;
 }
@@ -136,27 +228,36 @@ body {
 .tree-node-row {
   display: flex;
   align-items: center;
-  padding: 3px 8px;
+  padding: 5px 8px;
+  margin: 1px 6px;
+  border-radius: var(--md-shape-sm);
   cursor: pointer;
-  border-radius: 3px;
-  transition: background 0.1s;
+  transition: background var(--md-easing-standard) 120ms;
+  min-height: 36px;
 }
 
 .tree-node-row:hover {
-  background: #e8f0fe;
+  background: color-mix(in srgb, var(--md-primary) 8%, transparent);
 }
 
+/* Toggle icon (▶, rotates when expanded) */
 .tree-toggle {
-  width: 18px;
-  height: 18px;
+  width: 24px;
+  height: 24px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 10px;
-  color: #666;
+  font-size: 9px;
+  color: var(--md-on-surface-variant);
   flex-shrink: 0;
-  cursor: pointer;
-  transition: transform 0.15s;
+  border-radius: 50%;
+  transition:
+    transform var(--md-easing-emphasized) 200ms,
+    background var(--md-easing-standard) 120ms;
+}
+
+.tree-toggle:hover {
+  background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
 }
 
 .tree-toggle.expanded {
@@ -165,86 +266,283 @@ body {
 
 .tree-toggle.no-children {
   visibility: hidden;
+  pointer-events: none;
 }
 
+/* ─── M3 Checkbox ─── */
 .tree-checkbox {
-  width: 16px;
-  height: 16px;
-  margin: 0 6px 0 2px;
+  appearance: none;
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  margin: 0 8px 0 2px;
   flex-shrink: 0;
   cursor: pointer;
-  accent-color: #1a73e8;
+  border: 2px solid var(--md-on-surface-variant);
+  border-radius: 2px;
+  background: transparent;
+  position: relative;
+  transition:
+    background var(--md-easing-standard) 150ms,
+    border-color var(--md-easing-standard) 150ms;
 }
 
+/* State layer (ripple area) */
+.tree-checkbox::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background var(--md-easing-standard) 150ms;
+}
+
+.tree-checkbox:hover::before {
+  background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+}
+
+/* Checked state */
+.tree-checkbox:checked {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.tree-checkbox:checked:hover::before {
+  background: color-mix(in srgb, var(--md-primary) 8%, transparent);
+}
+
+/* Checkmark */
+.tree-checkbox:checked::after {
+  content: "";
+  position: absolute;
+  left: 3.5px;
+  top: 0.5px;
+  width: 5px;
+  height: 9px;
+  border: 2px solid var(--md-on-primary);
+  border-top: none;
+  border-left: none;
+  transform: rotate(45deg);
+}
+
+/* Indeterminate */
+.tree-checkbox:indeterminate {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.tree-checkbox:indeterminate::after {
+  content: "";
+  position: absolute;
+  left: 2.5px;
+  top: 6px;
+  width: 9px;
+  height: 2px;
+  background: var(--md-on-primary);
+  border-radius: 1px;
+}
+
+/* ─── Tree Labels ─── */
 .tree-label {
-  font-size: 12.5px;
+  font-size: 13px;
   line-height: 1.4;
   flex: 1;
+  min-width: 0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  color: var(--md-on-surface);
 }
 
 .tree-label.level-0 {
+  font-size: 13px;
   font-weight: 600;
-  color: #1a3a5c;
+  color: var(--md-on-primary-container);
 }
 
 .tree-label.level-1 {
-  font-weight: 500;
+  font-weight: 400;
+}
+
+.tree-label.level-2 {
+  font-weight: 400;
+  font-size: 12px;
+  color: var(--md-on-surface-variant);
 }
 
 .tree-children {
-  padding-left: 20px;
+  padding-left: 16px;
 }
 
 .tree-children.collapsed {
   display: none;
 }
 
-/* 진행 오버레이 */
-.progress-overlay {
+/* ─── Bottom Action Bar ─── */
+.bottom-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--md-surface-container-low);
+  border-top: 1px solid var(--md-outline-variant);
+  gap: 8px;
+}
+
+/* ─── M3 Switch ─── */
+.switch-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.switch-track {
+  position: relative;
+  display: block;
+  flex-shrink: 0;
+  width: 52px;
+  height: 32px;
+  border-radius: var(--md-shape-full);
+  background: var(--md-surface-container-high);
+  border: 2px solid var(--md-outline);
+  transition:
+    background var(--md-easing-standard) 200ms,
+    border-color var(--md-easing-standard) 200ms;
+}
+
+/* Thumb */
+.switch-track::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--md-outline);
+  transition:
+    transform var(--md-easing-emphasized) 250ms,
+    width var(--md-easing-standard) 200ms,
+    height var(--md-easing-standard) 200ms,
+    left var(--md-easing-standard) 200ms,
+    background var(--md-easing-standard) 200ms;
+}
+
+.switch-input:checked ~ .switch-track {
+  background: var(--md-primary);
+  border-color: var(--md-primary);
+}
+
+.switch-input:checked ~ .switch-track::after {
+  width: 24px;
+  height: 24px;
+  left: 2px;
+  transform: translateY(-50%) translateX(22px);
+  background: var(--md-on-primary);
+}
+
+.switch-label-text {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--md-on-surface-variant);
+  white-space: nowrap;
+}
+
+/* ─── M3 Filled Button ─── */
+.btn-filled {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 36px;
+  padding: 0 16px;
+  border: none;
+  border-radius: var(--md-shape-full);
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background var(--md-easing-standard) 150ms,
+    box-shadow var(--md-easing-standard) 150ms;
+}
+
+.btn-filled:hover:not(:disabled) {
+  box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.10);
+}
+
+.btn-filled:disabled {
+  background: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+  color: color-mix(in srgb, var(--md-on-surface) 38%, transparent);
+  cursor: default;
+  box-shadow: none;
+}
+
+/* ─── M3 Dialog + Scrim ─── */
+.scrim {
   position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
+  inset: 0;
+  background: var(--md-scrim);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 100;
 }
 
-.progress-box {
-  background: #fff;
-  border-radius: 8px;
+.dialog {
+  background: var(--md-surface-container-high);
+  border-radius: var(--md-shape-xl);
   padding: 24px;
-  width: 300px;
+  width: 272px;
+  box-shadow:
+    0 1px 3px rgba(0,0,0,0.10),
+    0 4px 8px rgba(0,0,0,0.08),
+    0 8px 20px rgba(0,0,0,0.10);
+}
+
+.dialog-headline {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--md-on-surface);
+  margin-bottom: 20px;
   text-align: center;
 }
 
-.progress-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
-
-.progress-bar-container {
+/* M3 Linear Progress Indicator */
+.linear-track {
   width: 100%;
-  height: 8px;
-  background: #e0e0e0;
-  border-radius: 4px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--md-primary-container);
   overflow: hidden;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
-.progress-bar {
+.linear-bar {
   height: 100%;
-  background: #1a73e8;
-  border-radius: 4px;
   width: 0%;
-  transition: width 0.3s;
+  border-radius: 2px;
+  background: var(--md-primary);
+  transition: width var(--md-easing-standard) 300ms;
 }
 
-.progress-text {
+.dialog-supporting {
   font-size: 12px;
-  color: #666;
+  color: var(--md-on-surface-variant);
+  text-align: center;
 }

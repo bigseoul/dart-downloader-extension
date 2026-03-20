@@ -13,6 +13,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   btnDeselectAll.addEventListener("click", () => toggleAll(false));
   btnDownload.addEventListener("click", downloadSelected);
 
+  document.getElementById("btnExpandAll").addEventListener("click", () => {
+    document.querySelectorAll(".tree-children").forEach((el) => el.classList.remove("collapsed"));
+    document.querySelectorAll(".tree-toggle:not(.no-children)").forEach((el) => el.classList.add("expanded"));
+  });
+  document.getElementById("btnCollapseAll").addEventListener("click", () => {
+    document.querySelectorAll(".tree-children").forEach((el) => el.classList.add("collapsed"));
+    document.querySelectorAll(".tree-toggle:not(.no-children)").forEach((el) => el.classList.remove("expanded"));
+  });
+
   await loadTreeData();
 });
 
@@ -213,10 +222,10 @@ function updateDownloadButton() {
   const btn = document.getElementById("btnDownload");
   const count = document.getElementById("selectedCount");
 
-  // 선택된 노드 중 자식이 이미 선택된 부모는 제외 (중복 방지)
-  const effectiveNodes = getEffectiveNodes();
-  count.textContent = effectiveNodes.length;
-  btn.disabled = effectiveNodes.length === 0;
+  // 체크된 총 개수 표시 (사용자가 선택한 수 그대로)
+  const checkedCount = document.querySelectorAll(".tree-checkbox:checked").length;
+  count.textContent = checkedCount;
+  btn.disabled = checkedCount === 0;
 }
 
 // ─── 실제 다운로드할 노드 목록 (중복 제거) ───
