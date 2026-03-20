@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>DART 문서 다운로더</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="header">
+    <h1>DART 문서 다운로더</h1>
+    <div class="header-info" id="docTitle"></div>
+  </div>
+
+  <div class="toolbar">
+    <button id="btnSelectAll" title="전체 선택">전체 선택</button>
+    <button id="btnDeselectAll" title="선택 해제">선택 해제</button>
+    <button id="btnDownload" title="선택 항목 다운로드" disabled>
+      📥 다운로드 (<span id="selectedCount">0</span>개)
+    </button>
+  </div>
+
+  <div id="loading" class="loading">
+    <div class="spinner"></div>
+    <span>목차를 불러오는 중...</span>
+  </div>
+
+  <div id="error" class="error" style="display:none;"></div>
+
+  <div id="treeContainer" class="tree-container" style="display:none;"></div>
+
+  <div id="progressOverlay" class="progress-overlay" style="display:none;">
+    <div class="progress-box">
+      <div class="progress-title">다운로드 중...</div>
+      <div class="progress-bar-container">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 / 0</div>
+    </div>
+  </div>
+
+  <script src="lib/jszip.min.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

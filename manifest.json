@@ -1,0 +1,44 @@
+{
+    "manifest_version": 3,
+    "name": "DART 문서 다운로더",
+    "version": "1.0.0",
+    "description": "DART 공시 문서의 목차를 트리 형태로 표시하고 선택한 섹션을 HTML로 다운로드합니다.",
+    "permissions": [
+        "activeTab",
+        "scripting",
+        "downloads"
+    ],
+    "host_permissions": [
+        "https://dart.fss.or.kr/*"
+    ],
+    "action": {
+        "default_popup": "popup.html",
+        "default_icon": {
+            "16": "icons/icon16.png",
+            "48": "icons/icon48.png",
+            "128": "icons/icon128.png"
+        }
+    },
+    "icons": {
+        "16": "icons/icon16.png",
+        "48": "icons/icon48.png",
+        "128": "icons/icon128.png"
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["inject.js"],
+            "matches": ["https://dart.fss.or.kr/*"]
+        }
+    ],
+    "content_scripts": [
+        {
+            "matches": [
+                "https://dart.fss.or.kr/dsaf001/main.do*"
+            ],
+            "js": [
+                "content.js"
+            ],
+            "run_at": "document_idle"
+        }
+    ]
+}
