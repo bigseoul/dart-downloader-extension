@@ -222,10 +222,10 @@ function updateDownloadButton() {
   const btn = document.getElementById("btnDownload");
   const count = document.getElementById("selectedCount");
 
-  // 체크된 총 개수 표시 (사용자가 선택한 수 그대로)
-  const checkedCount = document.querySelectorAll(".tree-checkbox:checked").length;
-  count.textContent = checkedCount;
-  btn.disabled = checkedCount === 0;
+  // 실제 다운로드 파일 수 (부모 선택 시 자식 제외한 중복 제거 수)
+  const effectiveCount = getEffectiveNodes().length;
+  count.textContent = effectiveCount;
+  btn.disabled = effectiveCount === 0;
 }
 
 // ─── 실제 다운로드할 노드 목록 (중복 제거) ───
@@ -330,6 +330,10 @@ async function downloadSelected() {
         } else {
           zip.file(`${fullName}.html`, response.html);
         }
+      } else {
+        // content script returned { success: false } — treat as failure
+        console.warn(`Failed response for: ${node.text}`, response?.error);
+        failed++;
       }
     } catch (e) {
       console.error(`Failed to fetch: ${node.text}`, e);

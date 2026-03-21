@@ -42,6 +42,17 @@
   box-sizing: border-box;
 }
 
+button {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  font-size: inherit;
+  line-height: 1;
+  border: none;
+  cursor: pointer;
+  vertical-align: middle;
+}
+
 body {
   width: 400px;
   max-height: 560px;
@@ -90,7 +101,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 12px;
+  height: 48px;
+  padding: 0 12px;
   background: var(--md-surface-container-low);
   border-bottom: 1px solid var(--md-outline-variant);
   gap: 8px;
@@ -105,9 +117,11 @@ body {
 
 /* ─── Assist Chips ─── */
 .chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: center;
   height: 32px;
+  line-height: 1;
   padding: 0 12px;
   border-radius: var(--md-shape-full);
   font-family: inherit;
@@ -149,7 +163,7 @@ body {
   justify-content: center;
   width: 32px;
   height: 32px;
-  font-size: 11px;
+  line-height: 1;
   border: none;
   border-radius: 50%;
   background: transparent;
@@ -159,8 +173,15 @@ body {
   flex-shrink: 0;
 }
 
+
 .icon-btn:hover {
   background: color-mix(in srgb, var(--md-on-surface) 8%, transparent);
+}
+
+.icon-btn svg {
+  display: block;
+  width: 20px;
+  height: 20px;
 }
 
 /* ─── Loading ─── */
