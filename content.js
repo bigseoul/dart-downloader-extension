@@ -3,10 +3,106 @@
 (function () {
   let pendingTreeResolve = null;
   const FETCH_TIMEOUT_MS = 15000;
+  const SINGLE_PAGE_FETCH_TIMEOUT_MS = 30000;
+  const CHARSET_ALIASES = {
+    "euc-kr": "euc-kr",
+    euckr: "euc-kr",
+    "ks_c_5601-1987": "euc-kr",
+    "ksc5601": "euc-kr",
+    "cp949": "euc-kr",
+    "windows-949": "euc-kr",
+    "x-windows-949": "euc-kr",
+    utf8: "utf-8",
+    "utf-8": "utf-8",
+  };
 
-  async function fetchTextWithTimeout(url, options = {}) {
+  function buildViewerUrl(params = {}) {
+    const query = new URLSearchParams({
+      rcpNo: params.rcpNo || "",
+      dcmNo: params.dcmNo || "",
+      eleId: params.eleId || "0",
+      offset: params.offset || "0",
+      length: params.length || "0",
+      dtd: params.dtd || "HTML",
+    });
+    return `/report/viewer.do?${query.toString()}`;
+  }
+
+  function normalizeCharset(charset) {
+    const normalized = (charset || "")
+      .trim()
+      .replace(/^["']|["']$/g, "")
+      .toLowerCase();
+    return CHARSET_ALIASES[normalized] || normalized || "utf-8";
+  }
+
+  function extractCharsetFromContentType(contentType) {
+    const match = (contentType || "").match(/charset\s*=\s*([^;]+)/i);
+    return match ? normalizeCharset(match[1]) : "";
+  }
+
+  function sniffCharsetFromHtmlBytes(bytes) {
+    const headText = new TextDecoder("latin1").decode(bytes.slice(0, 4096));
+
+    const charsetMetaMatch = headText.match(
+      /<meta[^>]+charset\s*=\s*["']?\s*([a-z0-9._-]+)/i
+    );
+    if (charsetMetaMatch) {
+      return normalizeCharset(charsetMetaMatch[1]);
+    }
+
+    const contentTypeMetaMatch = headText.match(
+      /<meta[^>]+content\s*=\s*["'][^"']*charset\s*=\s*([a-z0-9._-]+)/i
+    );
+    if (contentTypeMetaMatch) {
+      return normalizeCharset(contentTypeMetaMatch[1]);
+    }
+
+    return "";
+  }
+
+  function decodeHtmlBytes(bytes, charset) {
+    try {
+      return new TextDecoder(charset).decode(bytes);
+    } catch (_) {
+      return new TextDecoder("utf-8").decode(bytes);
+    }
+  }
+
+  function serializeDocument(doc) {
+    return `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+  }
+
+  function getSinglePageSourceDocument() {
+    const frame = document.getElementById("ifrm");
+    if (frame) {
+      try {
+        const frameDoc = frame.contentDocument;
+        if (
+          frameDoc &&
+          frameDoc.documentElement &&
+          normalizeCharset(frameDoc.characterSet || "") &&
+          normalizeTextContent(frameDoc.body?.textContent).length > 20
+        ) {
+          return frameDoc;
+        }
+      } catch (_) {}
+    }
+
+    return document;
+  }
+
+  function normalizeTextContent(text) {
+    return (text || "").replace(/\s+/g, " ").trim();
+  }
+
+  function serializeCurrentDocument() {
+    return serializeDocument(getSinglePageSourceDocument());
+  }
+
+  async function fetchTextWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
     const controller = new AbortController();
-    const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    const timerId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const response = await fetch(url, {
@@ -18,7 +114,13 @@
         throw new Error(`문서를 가져오지 못했습니다. (${response.status})`);
       }
 
-      return await response.text();
+      const bytes = new Uint8Array(await response.arrayBuffer());
+      const charset =
+        extractCharsetFromContentType(response.headers.get("content-type")) ||
+        sniffCharsetFromHtmlBytes(bytes) ||
+        "utf-8";
+
+      return decodeHtmlBytes(bytes, charset);
     } catch (error) {
       if (error.name === "AbortError") {
         throw new Error("문서 요청 시간이 초과되었습니다.");
@@ -94,10 +196,10 @@
 
           // 첫 번째 노드의 viewer.do HTML에서 기수 추출
           let period = "";
-          if (request.firstNode) {
+          const sourceParams = request.firstNode || request.docParams || null;
+          if (sourceParams) {
             try {
-              const { rcpNo, dcmNo, eleId, offset, length, dtd } = request.firstNode;
-              const url = `/report/viewer.do?rcpNo=${rcpNo}&dcmNo=${dcmNo}&eleId=${eleId}&offset=${offset}&length=${length}&dtd=${dtd}`;
+              const url = buildViewerUrl(sourceParams);
               const html = await fetchTextWithTimeout(url);
               const match = html.match(/제\s*(\d+)\s*기/);
               if (match) period = match[1] + "기";
@@ -113,11 +215,18 @@
     }
 
     if (request.action === "fetchNodeHTML") {
-      const { rcpNo, dcmNo, eleId, offset, length, dtd } = request.nodeData;
-      const url = `/report/viewer.do?rcpNo=${rcpNo}&dcmNo=${dcmNo}&eleId=${eleId}&offset=${offset}&length=${length}&dtd=${dtd}`;
+      const url = buildViewerUrl(request.nodeData);
 
       fetchTextWithTimeout(url)
         .then((html) => sendResponse({ success: true, html }))
+        .catch((e) => sendResponse({ success: false, error: e.message }));
+
+      return true;
+    }
+
+    if (request.action === "fetchSinglePageHTML") {
+      Promise.resolve()
+        .then(() => sendResponse({ success: true, html: serializeCurrentDocument() }))
         .catch((e) => sendResponse({ success: false, error: e.message }));
 
       return true;

@@ -9,6 +9,50 @@
     window.postMessage(payload, targetOrigin);
   }
 
+  function getSinglePageDocParams() {
+    var currentValues =
+      typeof currentDocValues !== "undefined" ? currentDocValues : null;
+    var searchParams = new URLSearchParams(window.location.search);
+
+    var rcpNo =
+      (currentValues && currentValues.rcpNo) || searchParams.get("rcpNo") || "";
+    var dcmNo =
+      (currentValues && currentValues.dcmNo) || searchParams.get("dcmNo") || "";
+
+    if (!rcpNo || !dcmNo) {
+      return null;
+    }
+
+    return {
+      rcpNo: rcpNo,
+      dcmNo: dcmNo,
+      eleId: (currentValues && currentValues.eleId) || "0",
+      offset: (currentValues && currentValues.offset) || "0",
+      length: (currentValues && currentValues.length) || "0",
+      dtd: (currentValues && currentValues.dtd) || "HTML",
+    };
+  }
+
+  function postSinglePageOrError(errorMessage) {
+    var docParams = getSinglePageDocParams();
+    if (docParams) {
+      postTreeResult({
+        type: "DART_TREE_DATA",
+        success: true,
+        singlePage: true,
+        data: [],
+        docParams: docParams,
+      });
+      return;
+    }
+
+    postTreeResult({
+      type: "DART_TREE_DATA",
+      success: false,
+      error: errorMessage,
+    });
+  }
+
   function tryExtract() {
     attempt++;
     try {
@@ -17,13 +61,7 @@
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        postTreeResult(
-          {
-            type: "DART_TREE_DATA",
-            success: false,
-            error: "jstree를 찾을 수 없습니다. DART 문서 페이지인지 확인해주세요.",
-          }
-        );
+        postSinglePageOrError("jstree를 찾을 수 없습니다. DART 문서 페이지인지 확인해주세요.");
         return;
       }
 
@@ -34,13 +72,7 @@
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        postTreeResult(
-          {
-            type: "DART_TREE_DATA",
-            success: false,
-            error: "트리 데이터가 아직 로드되지 않았습니다.",
-          }
-        );
+        postSinglePageOrError("트리 데이터가 아직 로드되지 않았습니다.");
         return;
       }
 

@@ -3,6 +3,7 @@
 let treeData = [];
 let selectedNodes = new Map(); // id -> nodeData
 let docMeta = { companyName: "", period: "", docType: "" }; // 기수_회사명_문서유형
+let singlePageDocParams = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   const btnSelectAll = document.getElementById("btnSelectAll");
@@ -32,6 +33,10 @@ async function loadTreeData() {
   const treeContainer = document.getElementById("treeContainer");
 
   try {
+    selectedNodes.clear();
+    treeData = [];
+    singlePageDocParams = null;
+
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
@@ -53,10 +58,25 @@ async function loadTreeData() {
       throw new Error(response?.error || "트리 데이터를 가져올 수 없습니다.");
     }
 
-    treeData = response.data;
+    let firstNode = response.data[0] || null;
+    if (response.singlePage) {
+      singlePageDocParams = response.docParams || null;
+      const singlePageResponse = await chrome.tabs.sendMessage(tab.id, {
+        action: "fetchSinglePageHTML",
+        docParams: singlePageDocParams,
+      });
+
+      if (!singlePageResponse || !singlePageResponse.success) {
+        throw new Error(singlePageResponse?.error || "단일 페이지 HTML을 가져올 수 없습니다.");
+      }
+
+      treeData = buildSinglePageTree(singlePageResponse.html);
+      firstNode = null;
+    } else {
+      treeData = response.data;
+    }
 
     // 기수, 회사명 메타 정보 가져오기 (첫 번째 노드의 HTML에서 기수 추출)
-    const firstNode = treeData[0] || null;
     try {
       const metaResponse = await chrome.tabs.sendMessage(tab.id, {
         action: "getDocMeta",
@@ -68,6 +88,7 @@ async function loadTreeData() {
           length: firstNode.length,
           dtd: firstNode.dtd,
         } : null,
+        docParams: singlePageDocParams,
       });
       if (metaResponse?.success) {
         docMeta.companyName = metaResponse.companyName;
@@ -231,6 +252,13 @@ function updateDownloadButton() {
 // ─── 실제 다운로드할 노드 목록 (중복 제거) ───
 function getEffectiveNodes() {
   const selected = Array.from(selectedNodes.values());
+  const fullDocumentNode = selected.find(
+    (node) => node.mode === "singlePageFullDocument"
+  );
+
+  if (fullDocumentNode) {
+    return [fullDocumentNode];
+  }
 
   // 부모 노드가 선택되어 있으면, 그 하위 자식 노드는 제외
   return selected.filter((node) => {
@@ -294,19 +322,25 @@ async function downloadSelected() {
 
   for (const node of effectiveNodes) {
     try {
-      const response = await chrome.tabs.sendMessage(tab.id, {
-        action: "fetchNodeHTML",
-        nodeData: {
-          rcpNo: node.rcpNo,
-          dcmNo: node.dcmNo,
-          eleId: node.eleId,
-          offset: node.offset,
-          length: node.length,
-          dtd: node.dtd,
-        },
-      });
+      let html = node._singlePageHtml || "";
+      let response = null;
 
-      if (response && response.success) {
+      if (!html) {
+        response = await chrome.tabs.sendMessage(tab.id, {
+          action: "fetchNodeHTML",
+          nodeData: {
+            rcpNo: node.rcpNo,
+            dcmNo: node.dcmNo,
+            eleId: node.eleId,
+            offset: node.offset,
+            length: node.length,
+            dtd: node.dtd,
+          },
+        });
+        html = response?.html || "";
+      }
+
+      if (html && (!response || response.success)) {
         // 파일명에서 특수문자 제거
         let safeName = node.text
           .replace(/[\\/:*?"<>|]/g, "_")
@@ -325,9 +359,9 @@ async function downloadSelected() {
 
         const downloadAsHtml = document.getElementById("chkDownloadHtml").checked;
         if (downloadAsHtml) {
-          zip.file(`${fullName}.html`, response.html);
+          zip.file(`${fullName}.html`, html);
         } else {
-          const txt = buildStructuredText(response.html, safeName);
+          const txt = buildStructuredText(html, safeName);
           zip.file(`${fullName}.txt`, txt);
         }
       } else {
