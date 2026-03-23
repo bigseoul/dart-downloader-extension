@@ -1,15 +1,17 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
   <meta charset="UTF-8">
   <title>jsDATAlab DART 다운로더</title>
   <link rel="stylesheet" href="popup.css">
 </head>
+
 <body>
 
   <!-- M3 Small Top App Bar -->
   <header class="app-bar">
-    <span class="app-bar-title">jsDATAlab DART 다운로더</span>
+    <span class="app-bar-title">jsDATAlab DART 다운로더 : AI 입력용</span>
     <span class="app-bar-subtitle" id="docTitle"></span>
   </header>
 
@@ -21,15 +23,17 @@
     </div>
     <div class="toolbar-end">
       <button class="icon-btn" id="btnExpandAll" title="모두 펼치기" aria-label="모두 펼치기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6,7 12,12 18,7"/>
-          <polyline points="6,12 12,17 18,12"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6,7 12,12 18,7" />
+          <polyline points="6,12 12,17 18,12" />
         </svg>
       </button>
       <button class="icon-btn" id="btnCollapseAll" title="모두 접기" aria-label="모두 접기">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <polyline points="6,17 12,12 18,17"/>
-          <polyline points="6,12 12,7 18,12"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+          stroke-linejoin="round" aria-hidden="true">
+          <polyline points="6,17 12,12 18,17" />
+          <polyline points="6,12 12,7 18,12" />
         </svg>
       </button>
     </div>
@@ -49,10 +53,10 @@
 
   <!-- Bottom action bar -->
   <div class="bottom-bar">
-    <label class="switch-wrap" title="structured text 형식으로 다운로드">
-      <input type="checkbox" id="chkStructuredText" class="switch-input">
+    <label class="switch-wrap" title="HTML 형식으로 다운로드">
+      <input type="checkbox" id="chkDownloadHtml" class="switch-input">
       <span class="switch-track" aria-hidden="true"></span>
-      <span class="switch-label-text">structured text</span>
+      <span class="switch-label-text">HTML</span>
     </label>
     <button class="btn-filled" id="btnDownload" disabled>
       다운로드&nbsp;<span id="selectedCount">0</span>건
@@ -74,4 +78,5 @@
   <script src="html_converter.js"></script>
   <script src="popup.js"></script>
 </body>
+
 </html>

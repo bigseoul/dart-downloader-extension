@@ -3,6 +3,11 @@
   var maxRetries = 10;
   var retryInterval = 500; // ms
   var attempt = 0;
+  var targetOrigin = window.location.origin;
+
+  function postTreeResult(payload) {
+    window.postMessage(payload, targetOrigin);
+  }
 
   function tryExtract() {
     attempt++;
@@ -12,30 +17,29 @@
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        window.postMessage(
+        postTreeResult(
           {
             type: "DART_TREE_DATA",
             success: false,
             error: "jstree를 찾을 수 없습니다. DART 문서 페이지인지 확인해주세요.",
-          },
-          "*"
+          }
         );
         return;
       }
 
       var tree = jQuery("#listTree").jstree(true);
-      if (!tree || !tree.get_node("#").children.length) {
+      var rootNode = tree && tree.get_node ? tree.get_node("#") : null;
+      if (!tree || !rootNode || !Array.isArray(rootNode.children) || !rootNode.children.length) {
         if (attempt < maxRetries) {
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        window.postMessage(
+        postTreeResult(
           {
             type: "DART_TREE_DATA",
             success: false,
             error: "트리 데이터가 아직 로드되지 않았습니다.",
-          },
-          "*"
+          }
         );
         return;
       }
@@ -58,23 +62,19 @@
         };
       }
 
-      var rootChildren = tree.get_node("#").children;
+      var rootChildren = rootNode.children;
       var data = rootChildren.map(function (childId) {
         return buildNodeData(tree, childId);
       });
 
-      window.postMessage(
-        { type: "DART_TREE_DATA", success: true, data: data },
-        "*"
-      );
+      postTreeResult({ type: "DART_TREE_DATA", success: true, data: data });
     } catch (e) {
       if (attempt < maxRetries) {
         setTimeout(tryExtract, retryInterval);
         return;
       }
-      window.postMessage(
+      postTreeResult(
         { type: "DART_TREE_DATA", success: false, error: e.message },
-        "*"
       );
     }
   }

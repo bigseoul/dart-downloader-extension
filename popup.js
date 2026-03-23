@@ -323,12 +323,12 @@ async function downloadSelected() {
           .join("_");
         const fullName = filePrefix ? `${filePrefix}_${safeName}` : safeName;
 
-        const useStructured = document.getElementById("chkStructuredText").checked;
-        if (useStructured) {
+        const downloadAsHtml = document.getElementById("chkDownloadHtml").checked;
+        if (downloadAsHtml) {
+          zip.file(`${fullName}.html`, response.html);
+        } else {
           const txt = buildStructuredText(response.html, safeName);
           zip.file(`${fullName}.txt`, txt);
-        } else {
-          zip.file(`${fullName}.html`, response.html);
         }
       } else {
         // content script returned { success: false } — treat as failure

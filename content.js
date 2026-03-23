@@ -2,6 +2,32 @@
 
 (function () {
   let pendingTreeResolve = null;
+  const FETCH_TIMEOUT_MS = 15000;
+
+  async function fetchTextWithTimeout(url, options = {}) {
+    const controller = new AbortController();
+    const timerId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`문서를 가져오지 못했습니다. (${response.status})`);
+      }
+
+      return await response.text();
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("문서 요청 시간이 초과되었습니다.");
+      }
+      throw error;
+    } finally {
+      clearTimeout(timerId);
+    }
+  }
 
   // 페이지 컨텍스트에서 전달된 메시지 수신
   window.addEventListener("message", (event) => {
@@ -72,8 +98,7 @@
             try {
               const { rcpNo, dcmNo, eleId, offset, length, dtd } = request.firstNode;
               const url = `/report/viewer.do?rcpNo=${rcpNo}&dcmNo=${dcmNo}&eleId=${eleId}&offset=${offset}&length=${length}&dtd=${dtd}`;
-              const resp = await fetch(url);
-              const html = await resp.text();
+              const html = await fetchTextWithTimeout(url);
               const match = html.match(/제\s*(\d+)\s*기/);
               if (match) period = match[1] + "기";
             } catch (_) {}
@@ -91,8 +116,7 @@
       const { rcpNo, dcmNo, eleId, offset, length, dtd } = request.nodeData;
       const url = `/report/viewer.do?rcpNo=${rcpNo}&dcmNo=${dcmNo}&eleId=${eleId}&offset=${offset}&length=${length}&dtd=${dtd}`;
 
-      fetch(url)
-        .then((r) => r.text())
+      fetchTextWithTimeout(url)
         .then((html) => sendResponse({ success: true, html }))
         .catch((e) => sendResponse({ success: false, error: e.message }));
 
