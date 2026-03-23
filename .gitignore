@@ -20,6 +20,9 @@ package-lock.json
 # Tool-specific
 .playwright-mcp/
 .serena/
+.claude/
+.agent/
+.agents/
 
 # Test / temp files
 icons/test_write.txt
