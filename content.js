@@ -4,6 +4,21 @@
   let pendingTreeResolve = null;
   const FETCH_TIMEOUT_MS = 15000;
   const SINGLE_PAGE_FETCH_TIMEOUT_MS = 30000;
+  const ERROR_CODES = {
+    HOST_INVALID: "HOST_INVALID",
+    DOCUMENT_ERROR_STATE: "DOCUMENT_ERROR_STATE",
+    TREE_DATA_UNAVAILABLE: "TREE_DATA_UNAVAILABLE",
+    FETCH_FAILURE: "FETCH_FAILURE",
+    FETCH_TIMEOUT: "FETCH_TIMEOUT",
+  };
+  const ERROR_MESSAGES = {
+    HOST_INVALID: "호스트 비정상: 허용된 DART 호스트가 아닙니다.",
+    DOCUMENT_ERROR_STATE: "페이지 로드 실패 상태: 문서가 비정상입니다.",
+    TREE_DATA_UNAVAILABLE: "트리 데이터를 가져올 수 없습니다.",
+    FETCH_FAILURE: "후속 문서 fetch 실패: 문서를 가져오지 못했습니다.",
+    FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다.",
+  };
+  const ALLOWED_HOSTS = ["dart.fss.or.kr", "dart1.fss.or.kr", "dart2.fss.or.kr"];
   const CHARSET_ALIASES = {
     "euc-kr": "euc-kr",
     euckr: "euc-kr",
@@ -25,7 +40,11 @@
       length: params.length || "0",
       dtd: params.dtd || "HTML",
     });
-    return `/report/viewer.do?${query.toString()}`;
+    return `${window.location.origin}/report/viewer.do?${query.toString()}`;
+  }
+
+  function isAllowedHost() {
+    return ALLOWED_HOSTS.includes(window.location.hostname);
   }
 
   function normalizeCharset(charset) {
@@ -96,6 +115,22 @@
     return (text || "").replace(/\s+/g, " ").trim();
   }
 
+  function isDocumentInErrorState() {
+    const bodyText = normalizeTextContent(document.body?.textContent);
+    if (bodyText.length < 20 && !document.getElementById("ifrm")) {
+      return true;
+    }
+    return false;
+  }
+
+  function makeErrorResponse(errorCode) {
+    return {
+      success: false,
+      errorCode,
+      error: ERROR_MESSAGES[errorCode] || errorCode,
+    };
+  }
+
   function serializeCurrentDocument() {
     return serializeDocument(getSinglePageSourceDocument());
   }
@@ -111,7 +146,9 @@
       });
 
       if (!response.ok) {
-        throw new Error(`문서를 가져오지 못했습니다. (${response.status})`);
+        const err = new Error(`문서를 가져오지 못했습니다. (${response.status})`);
+        err.errorCode = ERROR_CODES.FETCH_FAILURE;
+        throw err;
       }
 
       const bytes = new Uint8Array(await response.arrayBuffer());
@@ -123,7 +160,12 @@
       return decodeHtmlBytes(bytes, charset);
     } catch (error) {
       if (error.name === "AbortError") {
-        throw new Error("문서 요청 시간이 초과되었습니다.");
+        const timeoutError = new Error(ERROR_MESSAGES.FETCH_TIMEOUT);
+        timeoutError.errorCode = ERROR_CODES.FETCH_TIMEOUT;
+        throw timeoutError;
+      }
+      if (!error.errorCode) {
+        error.errorCode = ERROR_CODES.FETCH_FAILURE;
       }
       throw error;
     } finally {
@@ -145,10 +187,31 @@
 
   // 메시지 리스너: popup.js에서 요청이 오면 트리 데이터 반환
   chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
+    if (!isAllowedHost()) {
+      sendResponse(makeErrorResponse(ERROR_CODES.HOST_INVALID));
+      return true;
+    }
+
+    if (request.action !== "getTreeData" && isDocumentInErrorState()) {
+      sendResponse(makeErrorResponse(ERROR_CODES.DOCUMENT_ERROR_STATE));
+      return true;
+    }
+
     if (request.action === "getTreeData") {
       extractTreeDataViaInjection()
-        .then((result) => sendResponse(result))
-        .catch((e) => sendResponse({ success: false, error: e.message }));
+        .then((result) => {
+          if (!result.success && !result.errorCode) {
+            result.errorCode = ERROR_CODES.TREE_DATA_UNAVAILABLE;
+          }
+          sendResponse(result);
+        })
+        .catch((e) =>
+          sendResponse({
+            success: false,
+            errorCode: ERROR_CODES.TREE_DATA_UNAVAILABLE,
+            error: e.message,
+          })
+        );
       return true;
     }
 
@@ -208,7 +271,11 @@
 
           sendResponse({ success: true, companyName, period, docType });
         } catch (e) {
-          sendResponse({ success: false, error: e.message });
+          sendResponse({
+            success: false,
+            errorCode: e.errorCode || ERROR_CODES.FETCH_FAILURE,
+            error: e.message,
+          });
         }
       })();
       return true;
@@ -219,7 +286,13 @@
 
       fetchTextWithTimeout(url)
         .then((html) => sendResponse({ success: true, html }))
-        .catch((e) => sendResponse({ success: false, error: e.message }));
+        .catch((e) =>
+          sendResponse({
+            success: false,
+            errorCode: e.errorCode || ERROR_CODES.FETCH_FAILURE,
+            error: e.message,
+          })
+        );
 
       return true;
     }
@@ -227,7 +300,13 @@
     if (request.action === "fetchSinglePageHTML") {
       Promise.resolve()
         .then(() => sendResponse({ success: true, html: serializeCurrentDocument() }))
-        .catch((e) => sendResponse({ success: false, error: e.message }));
+        .catch((e) =>
+          sendResponse({
+            success: false,
+            errorCode: ERROR_CODES.DOCUMENT_ERROR_STATE,
+            error: e.message,
+          })
+        );
 
       return true;
     }

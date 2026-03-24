@@ -1,15 +1,17 @@
 {
     "manifest_version": 3,
-    "name": "DART 문서 다운로더",
-    "version": "1.0.0",
-    "description": "DART 공시 문서의 목차를 트리 형태로 표시하고 선택한 섹션을 HTML로 다운로드합니다.",
+    "name": "DART 다운로더 For AI",
+    "version": "1.0.1",
+    "description": "DART 공시 문서의 목차를 트리 형태로 표시하고 AI 입력 최적화를 위해 선택한 섹션을 구조화된 텍스트(or HTML)로 다운로드합니다.",
     "permissions": [
         "activeTab",
         "scripting",
         "downloads"
     ],
     "host_permissions": [
-        "https://dart.fss.or.kr/*"
+        "https://dart.fss.or.kr/*",
+        "https://dart1.fss.or.kr/*",
+        "https://dart2.fss.or.kr/*"
     ],
     "action": {
         "default_popup": "popup.html",
@@ -26,14 +28,22 @@
     },
     "web_accessible_resources": [
         {
-            "resources": ["inject.js"],
-            "matches": ["https://dart.fss.or.kr/*"]
+            "resources": [
+                "inject.js"
+            ],
+            "matches": [
+                "https://dart.fss.or.kr/*",
+                "https://dart1.fss.or.kr/*",
+                "https://dart2.fss.or.kr/*"
+            ]
         }
     ],
     "content_scripts": [
         {
             "matches": [
-                "https://dart.fss.or.kr/dsaf001/main.do*"
+                "https://dart.fss.or.kr/dsaf001/main.do*",
+                "https://dart1.fss.or.kr/dsaf001/main.do*",
+                "https://dart2.fss.or.kr/dsaf001/main.do*"
             ],
             "js": [
                 "content.js"

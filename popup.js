@@ -4,6 +4,42 @@ let treeData = [];
 let selectedNodes = new Map(); // id -> nodeData
 let docMeta = { companyName: "", period: "", docType: "" }; // 기수_회사명_문서유형
 let singlePageDocParams = null;
+const DART_PAGE_PATTERN = /^https:\/\/dart[12]?\.fss\.or\.kr\/dsaf001\/main\.do/;
+const POPUP_ERROR_MESSAGES = {
+  HOST_INVALID: "호스트 비정상: 허용된 DART 호스트에서 실행해주세요.",
+  DOCUMENT_ERROR_STATE: "페이지 로드 실패 상태: 문서가 정상적으로 로드되지 않았습니다.",
+  TREE_DATA_UNAVAILABLE: "문서 목차를 읽지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.",
+  FETCH_FAILURE: "문서를 가져오지 못했습니다. 네트워크 상태를 확인해주세요.",
+  FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.",
+};
+
+function resolveErrorMessage(responseOrError) {
+  if (responseOrError?.errorCode && POPUP_ERROR_MESSAGES[responseOrError.errorCode]) {
+    return POPUP_ERROR_MESSAGES[responseOrError.errorCode];
+  }
+  return responseOrError?.error || responseOrError?.message || "알 수 없는 오류가 발생했습니다.";
+}
+
+function buildFailureSummary(failedItems) {
+  const freq = new Map();
+  for (const item of failedItems) {
+    freq.set(item.message, (freq.get(item.message) || 0) + 1);
+  }
+  let primaryMessage = failedItems[0]?.message || "";
+  let maxCount = 0;
+  for (const [msg, count] of freq) {
+    if (count > maxCount) {
+      maxCount = count;
+      primaryMessage = msg;
+    }
+  }
+
+  const names = failedItems.slice(0, 3).map((item) => item.name);
+  const overflow = failedItems.length > 3 ? ` 외 ${failedItems.length - 3}개` : "";
+  const detailsText = names.join(", ") + overflow;
+
+  return { primaryMessage, detailsText };
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
   const btnSelectAll = document.getElementById("btnSelectAll");
@@ -42,8 +78,8 @@ async function loadTreeData() {
       currentWindow: true,
     });
 
-    if (!tab || !tab.url.includes("dart.fss.or.kr/dsaf001/main.do")) {
-      throw new Error("DART 공시 문서 페이지에서 실행해주세요.");
+    if (!tab || !DART_PAGE_PATTERN.test(tab.url || "")) {
+      throw new Error("DART 문서 페이지가 아닙니다.");
     }
 
     // 페이지 타이틀 표시
@@ -55,7 +91,7 @@ async function loadTreeData() {
     });
 
     if (!response || !response.success) {
-      throw new Error(response?.error || "트리 데이터를 가져올 수 없습니다.");
+      throw new Error(resolveErrorMessage(response));
     }
 
     let firstNode = response.data[0] || null;
@@ -67,7 +103,7 @@ async function loadTreeData() {
       });
 
       if (!singlePageResponse || !singlePageResponse.success) {
-        throw new Error(singlePageResponse?.error || "단일 페이지 HTML을 가져올 수 없습니다.");
+        throw new Error(resolveErrorMessage(singlePageResponse));
       }
 
       treeData = buildSinglePageTree(singlePageResponse.html);
@@ -317,7 +353,7 @@ async function downloadSelected() {
 
   const zip = new JSZip();
   let completed = 0;
-  let failed = 0;
+  const failedItems = [];
   const usedNames = new Map(); // 파일명 중복 방지
 
   for (const node of effectiveNodes) {
@@ -365,13 +401,20 @@ async function downloadSelected() {
           zip.file(`${fullName}.txt`, txt);
         }
       } else {
-        // content script returned { success: false } — treat as failure
-        console.warn(`Failed response for: ${node.text}`, response?.error);
-        failed++;
+        console.warn(`Failed response for: ${node.text}`, resolveErrorMessage(response));
+        failedItems.push({
+          name: node.text,
+          errorCode: response?.errorCode || "UNKNOWN",
+          message: resolveErrorMessage(response),
+        });
       }
     } catch (e) {
       console.error(`Failed to fetch: ${node.text}`, e);
-      failed++;
+      failedItems.push({
+        name: node.text,
+        errorCode: e.errorCode || "UNKNOWN",
+        message: resolveErrorMessage(e),
+      });
     }
 
     completed++;
@@ -381,15 +424,17 @@ async function downloadSelected() {
   }
 
   // ZIP 생성 및 다운로드
-  if (failed === effectiveNodes.length) {
-    alert("모든 섹션의 다운로드에 실패했습니다.");
+  if (failedItems.length === effectiveNodes.length) {
+    const { primaryMessage, detailsText } = buildFailureSummary(failedItems);
+    alert(`모든 섹션의 다운로드에 실패했습니다.\n${primaryMessage}\n\n실패 항목: ${detailsText}`);
     overlay.style.display = "none";
     return;
   }
 
-  if (failed > 0) {
+  if (failedItems.length > 0) {
+    const { primaryMessage } = buildFailureSummary(failedItems);
     const proceed = confirm(
-      `${failed}개 섹션을 가져오지 못했습니다. 나머지 ${effectiveNodes.length - failed}개만 다운로드할까요?`
+      `${failedItems.length}개 섹션을 가져오지 못했습니다.\n${primaryMessage}\n\n나머지 ${effectiveNodes.length - failedItems.length}개만 다운로드할까요?`
     );
     if (!proceed) {
       overlay.style.display = "none";
