@@ -115,6 +115,16 @@
     return (text || "").replace(/\s+/g, " ").trim();
   }
 
+  function extractPeriodFromText(text) {
+    const match = (text || "").match(/제\s*(\d+)\s*기/);
+    return match ? `${match[1]}기` : "";
+  }
+
+  function extractPeriodFromHtml(html) {
+    const text = normalizeTextContent((html || "").replace(/<[^>]*>/g, " "));
+    return extractPeriodFromText(text);
+  }
+
   function isDocumentInErrorState() {
     const bodyText = normalizeTextContent(document.body?.textContent);
     if (bodyText.length < 20 && !document.getElementById("ifrm")) {
@@ -257,16 +267,33 @@
             docType = titleParts[1] || "";
           }
 
-          // 첫 번째 노드의 viewer.do HTML에서 기수 추출
+          // 기수 추출: 현재 표시 문서 → 실제 보고서 노드 우선 후보 → 기존 fallback
           let period = "";
-          const sourceParams = request.firstNode || request.docParams || null;
-          if (sourceParams) {
-            try {
-              const url = buildViewerUrl(sourceParams);
-              const html = await fetchTextWithTimeout(url);
-              const match = html.match(/제\s*(\d+)\s*기/);
-              if (match) period = match[1] + "기";
-            } catch (_) {}
+
+          try {
+            const currentDoc = getSinglePageSourceDocument();
+            period = extractPeriodFromText(currentDoc.body?.textContent);
+          } catch (_) {}
+
+          if (!period && Array.isArray(request.reportCandidateNodes)) {
+            for (const params of request.reportCandidateNodes) {
+              try {
+                const html = await fetchTextWithTimeout(buildViewerUrl(params));
+                period = extractPeriodFromHtml(html);
+                if (period) break;
+              } catch (_) {}
+            }
+          }
+
+          if (!period) {
+            const sourceParams = request.firstNode || request.docParams || null;
+            if (sourceParams) {
+              try {
+                const url = buildViewerUrl(sourceParams);
+                const html = await fetchTextWithTimeout(url);
+                period = extractPeriodFromHtml(html);
+              } catch (_) {}
+            }
           }
 
           sendResponse({ success: true, companyName, period, docType });

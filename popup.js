@@ -20,6 +20,21 @@ function resolveErrorMessage(responseOrError) {
   return responseOrError?.error || responseOrError?.message || "알 수 없는 오류가 발생했습니다.";
 }
 
+function normalizeNodeLabel(text) {
+  return (text || "").replace(/\s+/g, "");
+}
+
+function isReportCandidateNode(node) {
+  const label = normalizeNodeLabel(node?.text);
+  if (!label) return false;
+  if (label.includes("정정신고")) return false;
+  return (
+    label.includes("사업보고서") ||
+    label.includes("반기보고서") ||
+    label.includes("분기보고서")
+  );
+}
+
 function buildFailureSummary(failedItems) {
   const freq = new Map();
   for (const item of failedItems) {
@@ -112,8 +127,24 @@ async function loadTreeData() {
       treeData = response.data;
     }
 
-    // 기수, 회사명 메타 정보 가져오기 (첫 번째 노드의 HTML에서 기수 추출)
+    // 기수, 회사명 메타 정보 가져오기
     try {
+      const reportCandidateNodes = Array.isArray(treeData)
+        ? treeData
+            .filter((node) => node?.rcpNo && node?.dcmNo)
+            .filter((node) => isReportCandidateNode(node))
+            .slice(0, 3)
+            .map((node) => ({
+              rcpNo: node.rcpNo,
+              dcmNo: node.dcmNo,
+              eleId: node.eleId,
+              offset: node.offset,
+              length: node.length,
+              dtd: node.dtd,
+              text: node.text,
+            }))
+        : [];
+
       const metaResponse = await chrome.tabs.sendMessage(tab.id, {
         action: "getDocMeta",
         firstNode: firstNode ? {
@@ -125,6 +156,7 @@ async function loadTreeData() {
           dtd: firstNode.dtd,
         } : null,
         docParams: singlePageDocParams,
+        reportCandidateNodes,
       });
       if (metaResponse?.success) {
         docMeta.companyName = metaResponse.companyName;
