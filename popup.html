@@ -53,13 +53,37 @@
 
   <!-- Bottom action bar -->
   <div class="bottom-bar">
-    <label class="switch-wrap" title="HTML 형식으로 다운로드">
-      <input type="checkbox" id="chkDownloadHtml" class="switch-input">
-      <span class="switch-track" aria-hidden="true"></span>
-      <span class="switch-label-text">HTML</span>
-    </label>
-    <button class="btn-filled" id="btnDownload" disabled>
-      다운로드&nbsp;<span id="selectedCount">0</span>건
+    <div class="mode-panel" role="radiogroup" aria-label="저장 방식">
+      <div class="mode-panel-header">
+        <p class="mode-panel-title">저장 방식</p>
+        <p class="mode-panel-caption">출력 형식 선택</p>
+      </div>
+      <div class="mode-options">
+        <label class="mode-option">
+          <input type="radio" name="outputMode" value="ai-merged" class="mode-option-input" checked>
+          <span class="mode-option-body">
+            <span class="mode-option-title">통합 TXT</span>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="outputMode" value="ai-zip" class="mode-option-input">
+          <span class="mode-option-body">
+            <span class="mode-option-title">분리 ZIP</span>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="outputMode" value="html-zip" class="mode-option-input">
+          <span class="mode-option-body">
+            <span class="mode-option-title">HTML ZIP</span>
+          </span>
+        </label>
+      </div>
+      <p class="mode-helper" id="outputModeHelper">
+        AI 입력용은 HTML을 정리한 텍스트 형식입니다.
+      </p>
+    </div>
+    <button class="btn-filled btn-download" id="btnDownload" disabled>
+      <span id="downloadLabel">AI 입력용 통합 저장</span>
     </button>
   </div>
 

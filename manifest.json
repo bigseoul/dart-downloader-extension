@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "DART 다운로더 For AI",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "description": "DART 공시 문서의 목차를 트리 형태로 표시하고 AI 입력 최적화를 위해 선택한 섹션을 구조화된 텍스트(or HTML)로 다운로드합니다.",
     "permissions": [
         "activeTab",

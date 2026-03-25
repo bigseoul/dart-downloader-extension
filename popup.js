@@ -4,6 +4,11 @@ let treeData = [];
 let selectedNodes = new Map(); // id -> nodeData
 let docMeta = { companyName: "", period: "", docType: "" }; // 기수_회사명_문서유형
 let singlePageDocParams = null;
+const OUTPUT_MODES = {
+  AI_MERGED: "ai-merged",
+  AI_ZIP: "ai-zip",
+  HTML_ZIP: "html-zip",
+};
 const DART_PAGE_PATTERN = /^https:\/\/dart[12]?\.fss\.or\.kr\/dsaf001\/main\.do/;
 const POPUP_ERROR_MESSAGES = {
   HOST_INVALID: "호스트 비정상: 허용된 DART 호스트에서 실행해주세요.",
@@ -18,6 +23,71 @@ function resolveErrorMessage(responseOrError) {
     return POPUP_ERROR_MESSAGES[responseOrError.errorCode];
   }
   return responseOrError?.error || responseOrError?.message || "알 수 없는 오류가 발생했습니다.";
+}
+
+function getSelectedOutputMode() {
+  return (
+    document.querySelector('input[name="outputMode"]:checked')?.value ||
+    OUTPUT_MODES.AI_MERGED
+  );
+}
+
+function sanitizeFilename(value) {
+  return (value || "")
+    .replace(/[\\/:*?"<>|]/g, "_")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function buildDownloadBaseName() {
+  const prefix = [docMeta.period, docMeta.companyName, docMeta.docType]
+    .filter(Boolean)
+    .join("_");
+  return sanitizeFilename(prefix) || "dart_documents";
+}
+
+function stripStructuredDocumentHeader(text) {
+  return (text || "").replace(/^DOCUMENT:[^\n]*\n+/, "").trim();
+}
+
+function buildMergedStructuredText(items, outputFileName) {
+  const blocks = [`DOCUMENT: ${outputFileName}`, `ITEM_COUNT: ${items.length}`, ""];
+
+  items.forEach((item, index) => {
+    const structuredText = buildStructuredText(item.html, item.displayName);
+    const body = stripStructuredDocumentHeader(structuredText);
+
+    blocks.push(`===== ${item.displayName} =====`);
+    if (body) {
+      blocks.push(body);
+    }
+    if (index < items.length - 1) {
+      blocks.push("", "");
+    }
+  });
+
+  return `${blocks.join("\n").trim()}\n`;
+}
+
+function updateOutputModeUI() {
+  const mode = getSelectedOutputMode();
+  const helper = document.getElementById("outputModeHelper");
+  const label = document.getElementById("downloadLabel");
+
+  if (helper && label) {
+    if (mode === OUTPUT_MODES.AI_MERGED) {
+      helper.textContent = "선택 섹션을 AI 입력용 텍스트 1개 파일로 정리해 저장합니다.";
+      label.textContent = "통합 TXT 저장";
+    } else if (mode === OUTPUT_MODES.AI_ZIP) {
+      helper.textContent = "선택 섹션마다 AI 입력용 텍스트를 만들고 ZIP으로 묶어 저장합니다.";
+      label.textContent = "분리 ZIP 저장";
+    } else {
+      helper.textContent = "변환 없이 원본 HTML을 섹션별 파일로 묶어 ZIP으로 저장합니다.";
+      label.textContent = "HTML ZIP 저장";
+    }
+  }
+
+  updateDownloadButton();
 }
 
 function normalizeNodeLabel(text) {
@@ -60,10 +130,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   const btnSelectAll = document.getElementById("btnSelectAll");
   const btnDeselectAll = document.getElementById("btnDeselectAll");
   const btnDownload = document.getElementById("btnDownload");
+  const outputModeInputs = document.querySelectorAll('input[name="outputMode"]');
 
   btnSelectAll.addEventListener("click", () => toggleAll(true));
   btnDeselectAll.addEventListener("click", () => toggleAll(false));
   btnDownload.addEventListener("click", downloadSelected);
+  outputModeInputs.forEach((input) => {
+    input.addEventListener("change", updateOutputModeUI);
+  });
 
   document.getElementById("btnExpandAll").addEventListener("click", () => {
     document.querySelectorAll(".tree-children").forEach((el) => el.classList.remove("collapsed"));
@@ -74,6 +148,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".tree-toggle:not(.no-children)").forEach((el) => el.classList.remove("expanded"));
   });
 
+  updateOutputModeUI();
   await loadTreeData();
 });
 
@@ -309,11 +384,7 @@ function toggleAll(checked) {
 // ─── 다운로드 버튼 상태 업데이트 ───
 function updateDownloadButton() {
   const btn = document.getElementById("btnDownload");
-  const count = document.getElementById("selectedCount");
-
-  // 실제 다운로드 파일 수 (부모 선택 시 자식 제외한 중복 제거 수)
   const effectiveCount = getEffectiveNodes().length;
-  count.textContent = effectiveCount;
   btn.disabled = effectiveCount === 0;
 }
 
@@ -333,6 +404,50 @@ function getEffectiveNodes() {
     // 이 노드의 부모가 selectedNodes에 있는지 확인
     return !hasSelectedAncestor(node.id);
   });
+}
+
+function collectLeafNodes(node, leaves = []) {
+  if (!node || !Array.isArray(node.children) || node.children.length === 0) {
+    if (node) {
+      leaves.push(node);
+    }
+    return leaves;
+  }
+
+  node.children.forEach((child) => collectLeafNodes(child, leaves));
+  return leaves;
+}
+
+function getDownloadNodesForMode(mode) {
+  const effectiveNodes = getEffectiveNodes();
+
+  if (mode === OUTPUT_MODES.AI_MERGED) {
+    return effectiveNodes;
+  }
+
+  const expandedNodes = [];
+  const seenIds = new Set();
+
+  effectiveNodes.forEach((node) => {
+    if (node.mode === "singlePageFullDocument") {
+      if (!seenIds.has(node.id)) {
+        seenIds.add(node.id);
+        expandedNodes.push(node);
+      }
+      return;
+    }
+
+    const leaves = collectLeafNodes(node);
+    leaves.forEach((leafNode) => {
+      if (seenIds.has(leafNode.id)) {
+        return;
+      }
+      seenIds.add(leafNode.id);
+      expandedNodes.push(leafNode);
+    });
+  });
+
+  return expandedNodes;
 }
 
 function hasSelectedAncestor(nodeId) {
@@ -367,7 +482,8 @@ function findNodeById(nodes, id) {
 
 // ─── 다운로드 실행 ───
 async function downloadSelected() {
-  const effectiveNodes = getEffectiveNodes();
+  const outputMode = getSelectedOutputMode();
+  const effectiveNodes = getDownloadNodesForMode(outputMode);
   if (effectiveNodes.length === 0) return;
 
   const overlay = document.getElementById("progressOverlay");
@@ -383,10 +499,10 @@ async function downloadSelected() {
     currentWindow: true,
   });
 
-  const zip = new JSZip();
   let completed = 0;
   const failedItems = [];
-  const usedNames = new Map(); // 파일명 중복 방지
+  const usedNames = new Map();
+  const successfulItems = [];
 
   for (const node of effectiveNodes) {
     try {
@@ -409,29 +525,14 @@ async function downloadSelected() {
       }
 
       if (html && (!response || response.success)) {
-        // 파일명에서 특수문자 제거
-        let safeName = node.text
-          .replace(/[\\/:*?"<>|]/g, "_")
-          .replace(/\s+/g, " ")
-          .trim();
-        // 동일 파일명 충돌 시 인덱스 추가
+        const displayName = (node.text || "").replace(/\s+/g, " ").trim() || "untitled";
+        let safeName = sanitizeFilename(displayName) || "untitled";
         const count = usedNames.get(safeName) || 0;
         usedNames.set(safeName, count + 1);
         if (count > 0) {
           safeName = `${safeName} (${count + 1})`;
         }
-        const filePrefix = [docMeta.period, docMeta.companyName, docMeta.docType]
-          .filter(Boolean)
-          .join("_");
-        const fullName = filePrefix ? `${filePrefix}_${safeName}` : safeName;
-
-        const downloadAsHtml = document.getElementById("chkDownloadHtml").checked;
-        if (downloadAsHtml) {
-          zip.file(`${fullName}.html`, html);
-        } else {
-          const txt = buildStructuredText(html, safeName);
-          zip.file(`${fullName}.txt`, txt);
-        }
+        successfulItems.push({ displayName, safeName, html });
       } else {
         console.warn(`Failed response for: ${node.text}`, resolveErrorMessage(response));
         failedItems.push({
@@ -455,7 +556,6 @@ async function downloadSelected() {
     progressText.textContent = `${completed} / ${effectiveNodes.length}`;
   }
 
-  // ZIP 생성 및 다운로드
   if (failedItems.length === effectiveNodes.length) {
     const { primaryMessage, detailsText } = buildFailureSummary(failedItems);
     alert(`모든 섹션의 다운로드에 실패했습니다.\n${primaryMessage}\n\n실패 항목: ${detailsText}`);
@@ -476,23 +576,45 @@ async function downloadSelected() {
 
   let blobUrl = null;
   try {
-    const blob = await zip.generateAsync({ type: "blob" });
-    blobUrl = URL.createObjectURL(blob);
+    const baseName = buildDownloadBaseName();
 
-    // 기수_회사명_문서유형 접두사 생성
-    const prefix = [docMeta.period, docMeta.companyName, docMeta.docType]
-      .filter(Boolean)
-      .join("_");
-    const safePrefix = prefix.replace(/[\\/:*?"<>|]/g, "_").trim();
-    const zipName = safePrefix || "dart_documents";
+    if (outputMode === OUTPUT_MODES.AI_MERGED) {
+      const fileName = `${baseName}_ai_input.txt`;
+      const mergedText = buildMergedStructuredText(successfulItems, fileName);
+      const blob = new Blob([mergedText], { type: "text/plain;charset=utf-8" });
+      blobUrl = URL.createObjectURL(blob);
+      await chrome.downloads.download({
+        url: blobUrl,
+        filename: fileName,
+        saveAs: true,
+      });
+    } else {
+      const zip = new JSZip();
 
-    await chrome.downloads.download({
-      url: blobUrl,
-      filename: `${zipName}.zip`,
-      saveAs: true,
-    });
+      successfulItems.forEach((item) => {
+        const fullName = `${baseName}_${item.safeName}`;
+        if (outputMode === OUTPUT_MODES.HTML_ZIP) {
+          zip.file(`${fullName}.html`, item.html);
+          return;
+        }
+
+        const txt = buildStructuredText(item.html, item.displayName);
+        zip.file(`${fullName}.txt`, txt);
+      });
+
+      const blob = await zip.generateAsync({ type: "blob" });
+      blobUrl = URL.createObjectURL(blob);
+      const zipSuffix =
+        outputMode === OUTPUT_MODES.HTML_ZIP ? "_html.zip" : "_ai_input.zip";
+
+      await chrome.downloads.download({
+        url: blobUrl,
+        filename: `${baseName}${zipSuffix}`,
+        saveAs: true,
+      });
+    }
   } catch (e) {
-    console.error("ZIP 생성 실패:", e);
+    console.error("다운로드 파일 생성 실패:", e);
     alert("다운로드에 실패했습니다: " + e.message);
   } finally {
     if (blobUrl) URL.revokeObjectURL(blobUrl);
