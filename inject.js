@@ -4,6 +4,11 @@
   var retryInterval = 500; // ms
   var attempt = 0;
   var targetOrigin = window.location.origin;
+  var startedAt = performance.now();
+
+  function logInjectTiming(step, detail) {
+    console.info("[DART AI][inject]", step, detail || "");
+  }
 
   function postTreeResult(payload) {
     window.postMessage(payload, targetOrigin);
@@ -56,8 +61,31 @@
   function tryExtract() {
     attempt++;
     try {
+      var docParams = getSinglePageDocParams();
+      var listTreeElement = document.getElementById("listTree");
+
+      if (!listTreeElement && docParams) {
+        logInjectTiming("singlePage.fast-path", {
+          elapsedMs: Math.round(performance.now() - startedAt),
+          attempt: attempt,
+          reason: "listTree-missing",
+        });
+        postTreeResult({
+          type: "DART_TREE_DATA",
+          success: true,
+          singlePage: true,
+          data: [],
+          docParams: docParams,
+        });
+        return;
+      }
+
       if (typeof jQuery === "undefined" || !jQuery("#listTree").jstree) {
         if (attempt < maxRetries) {
+          logInjectTiming("jstree.wait", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+          });
           setTimeout(tryExtract, retryInterval);
           return;
         }
@@ -68,7 +96,26 @@
       var tree = jQuery("#listTree").jstree(true);
       var rootNode = tree && tree.get_node ? tree.get_node("#") : null;
       if (!tree || !rootNode || !Array.isArray(rootNode.children) || !rootNode.children.length) {
+        if (docParams && typeof cnt !== "undefined" && Number(cnt) === 0) {
+          logInjectTiming("singlePage.fast-path", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+            reason: "empty-toc",
+          });
+          postTreeResult({
+            type: "DART_TREE_DATA",
+            success: true,
+            singlePage: true,
+            data: [],
+            docParams: docParams,
+          });
+          return;
+        }
         if (attempt < maxRetries) {
+          logInjectTiming("root.wait", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+          });
           setTimeout(tryExtract, retryInterval);
           return;
         }
@@ -99,9 +146,19 @@
         return buildNodeData(tree, childId);
       });
 
+      logInjectTiming("tree.ready", {
+        elapsedMs: Math.round(performance.now() - startedAt),
+        attempt: attempt,
+        rootCount: rootChildren.length,
+      });
       postTreeResult({ type: "DART_TREE_DATA", success: true, data: data });
     } catch (e) {
       if (attempt < maxRetries) {
+        logInjectTiming("extract.retry", {
+          elapsedMs: Math.round(performance.now() - startedAt),
+          attempt: attempt,
+          message: e.message,
+        });
         setTimeout(tryExtract, retryInterval);
         return;
       }

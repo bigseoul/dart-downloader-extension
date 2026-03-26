@@ -3,7 +3,10 @@
 let treeData = [];
 let selectedNodes = new Map(); // id -> nodeData
 let docMeta = { companyName: "", period: "", docType: "" }; // 기수_회사명_문서유형
+let docMetaPromise = null;
 let singlePageDocParams = null;
+let singlePageUiMode = false;
+let isLoadingState = false;
 const OUTPUT_MODES = {
   AI_MERGED: "ai-merged",
   AI_ZIP: "ai-zip",
@@ -16,6 +19,10 @@ const POPUP_ERROR_MESSAGES = {
   FETCH_FAILURE: "문서를 가져오지 못했습니다. 네트워크 상태를 확인해주세요.",
   FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.",
 };
+
+function logPopupTiming(step, detail) {
+  console.info("[DART AI][popup]", step, detail || "");
+}
 
 function resolveErrorMessage(responseOrError) {
   if (responseOrError?.errorCode && POPUP_ERROR_MESSAGES[responseOrError.errorCode]) {
@@ -49,6 +56,16 @@ function stripStructuredDocumentHeader(text) {
   return (text || "").replace(/^DOCUMENT:[^\n]*\n+/, "").trim();
 }
 
+function createSinglePageFullDocumentNode(html = "") {
+  return {
+    id: "sp-full-document",
+    text: "전체 문서",
+    children: [],
+    mode: "singlePageFullDocument",
+    _singlePageHtml: html,
+  };
+}
+
 function buildMergedStructuredText(items, outputFileName) {
   const blocks = [`DOCUMENT: ${outputFileName}`, `ITEM_COUNT: ${items.length}`, ""];
 
@@ -69,12 +86,15 @@ function buildMergedStructuredText(items, outputFileName) {
 }
 
 function updateOutputModeUI() {
-  const mode = getSelectedOutputMode();
+  const mode = singlePageUiMode ? OUTPUT_MODES.AI_MERGED : getSelectedOutputMode();
   const helper = document.getElementById("outputModeHelper");
   const label = document.getElementById("downloadLabel");
 
   if (helper && label) {
-    if (mode === OUTPUT_MODES.AI_MERGED) {
+    if (singlePageUiMode) {
+      helper.textContent = "문서 전체를 한 파일로 저장합니다.";
+      label.textContent = "전체 저장";
+    } else if (mode === OUTPUT_MODES.AI_MERGED) {
       helper.textContent = "선택한 내용을 하나의 AI 입력용 텍스트 파일로 저장합니다.";
       label.textContent = "합쳐 저장";
     } else {
@@ -83,6 +103,49 @@ function updateOutputModeUI() {
     }
   }
 
+  updateDownloadButton();
+}
+
+function renderLayout() {
+  const toolbar = document.getElementById("toolbar");
+  const loading = document.getElementById("loading");
+  const notice = document.getElementById("singlePageNotice");
+  const treeContainer = document.getElementById("treeContainer");
+  const modePanel = document.getElementById("modePanel");
+  const bottomBar = document.getElementById("bottomBar");
+  const errorDiv = document.getElementById("error");
+
+  if (loading) {
+    loading.style.display = isLoadingState ? "flex" : "none";
+  }
+  if (toolbar) {
+    toolbar.style.display = !isLoadingState && !singlePageUiMode ? "flex" : "none";
+  }
+  if (treeContainer) {
+    treeContainer.style.display = !isLoadingState && !singlePageUiMode ? "block" : "none";
+  }
+  if (modePanel) {
+    modePanel.style.display = singlePageUiMode ? "none" : "flex";
+  }
+  if (notice) {
+    notice.style.display = !isLoadingState && singlePageUiMode ? "flex" : "none";
+  }
+  if (bottomBar) {
+    bottomBar.style.display = !isLoadingState || singlePageUiMode ? "flex" : "none";
+  }
+  if (errorDiv && isLoadingState) {
+    errorDiv.style.display = "none";
+  }
+}
+
+function setSinglePageUiMode(enabled) {
+  singlePageUiMode = enabled;
+  renderLayout();
+}
+
+function setLoadingUi(isLoading) {
+  isLoadingState = isLoading;
+  renderLayout();
   updateDownloadButton();
 }
 
@@ -150,18 +213,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 // ─── 트리 데이터 로드 ───
 async function loadTreeData() {
-  const loading = document.getElementById("loading");
   const errorDiv = document.getElementById("error");
   const treeContainer = document.getElementById("treeContainer");
+  const startedAt = performance.now();
 
   try {
     selectedNodes.clear();
     treeData = [];
     singlePageDocParams = null;
+    docMeta = { companyName: "", period: "", docType: "" };
+    docMetaPromise = null;
+    setSinglePageUiMode(false);
+    setLoadingUi(true);
+    treeContainer.innerHTML = "";
 
     const [tab] = await chrome.tabs.query({
       active: true,
       currentWindow: true,
+    });
+    logPopupTiming("tabs.query.done", {
+      elapsedMs: Math.round(performance.now() - startedAt),
+      url: tab?.url || "",
     });
 
     if (!tab || !DART_PAGE_PATTERN.test(tab.url || "")) {
@@ -175,31 +247,56 @@ async function loadTreeData() {
     const response = await chrome.tabs.sendMessage(tab.id, {
       action: "getTreeData",
     });
+    logPopupTiming("getTreeData.done", {
+      elapsedMs: Math.round(performance.now() - startedAt),
+      singlePage: Boolean(response?.singlePage),
+    });
 
     if (!response || !response.success) {
       throw new Error(resolveErrorMessage(response));
     }
 
+    const fetchDocMeta = async (firstNode, reportCandidateNodes = []) => {
+      try {
+        const metaResponse = await chrome.tabs.sendMessage(tab.id, {
+          action: "getDocMeta",
+          firstNode: firstNode
+            ? {
+                rcpNo: firstNode.rcpNo,
+                dcmNo: firstNode.dcmNo,
+                eleId: firstNode.eleId,
+                offset: firstNode.offset,
+                length: firstNode.length,
+                dtd: firstNode.dtd,
+              }
+            : null,
+          docParams: singlePageDocParams,
+          reportCandidateNodes,
+        });
+        if (metaResponse?.success) {
+          docMeta.companyName = metaResponse.companyName;
+          docMeta.period = metaResponse.period;
+          docMeta.docType = metaResponse.docType;
+        }
+      } catch (_) {}
+    };
+
     let firstNode = response.data[0] || null;
     if (response.singlePage) {
       singlePageDocParams = response.docParams || null;
-      const singlePageResponse = await chrome.tabs.sendMessage(tab.id, {
-        action: "fetchSinglePageHTML",
-        docParams: singlePageDocParams,
-      });
-
-      if (!singlePageResponse || !singlePageResponse.success) {
-        throw new Error(resolveErrorMessage(singlePageResponse));
-      }
-
-      treeData = buildSinglePageTree(singlePageResponse.html);
+      setSinglePageUiMode(true);
+      updateOutputModeUI();
+      setLoadingUi(true);
+      docMetaPromise = fetchDocMeta(null, []);
+      const fullDocumentNode = createSinglePageFullDocumentNode();
+      treeData = [fullDocumentNode];
+      selectedNodes.set(fullDocumentNode.id, fullDocumentNode);
       firstNode = null;
+      logPopupTiming("singlePage.ui.ready", {
+        elapsedMs: Math.round(performance.now() - startedAt),
+      });
     } else {
       treeData = response.data;
-    }
-
-    // 기수, 회사명 메타 정보 가져오기
-    try {
       const reportCandidateNodes = Array.isArray(treeData)
         ? treeData
             .filter((node) => node?.rcpNo && node?.dcmNo)
@@ -215,34 +312,31 @@ async function loadTreeData() {
               text: node.text,
             }))
         : [];
-
-      const metaResponse = await chrome.tabs.sendMessage(tab.id, {
-        action: "getDocMeta",
-        firstNode: firstNode ? {
-          rcpNo: firstNode.rcpNo,
-          dcmNo: firstNode.dcmNo,
-          eleId: firstNode.eleId,
-          offset: firstNode.offset,
-          length: firstNode.length,
-          dtd: firstNode.dtd,
-        } : null,
-        docParams: singlePageDocParams,
-        reportCandidateNodes,
+      docMetaPromise = fetchDocMeta(firstNode, reportCandidateNodes);
+      await docMetaPromise;
+      logPopupTiming("tree.meta.ready", {
+        elapsedMs: Math.round(performance.now() - startedAt),
+        nodeCount: Array.isArray(treeData) ? treeData.length : 0,
       });
-      if (metaResponse?.success) {
-        docMeta.companyName = metaResponse.companyName;
-        docMeta.period = metaResponse.period;
-        docMeta.docType = metaResponse.docType;
-      }
-    } catch (_) {}
+    }
 
-    loading.style.display = "none";
-    treeContainer.style.display = "block";
-    renderTree(treeData, treeContainer, 0);
+    setLoadingUi(false);
+    if (!singlePageUiMode) {
+      renderTree(treeData, treeContainer, 0);
+    }
+    updateOutputModeUI();
+    logPopupTiming("loadTreeData.done", {
+      elapsedMs: Math.round(performance.now() - startedAt),
+      singlePage: singlePageUiMode,
+    });
   } catch (e) {
-    loading.style.display = "none";
+    setLoadingUi(false);
     errorDiv.style.display = "block";
     errorDiv.textContent = e.message;
+    logPopupTiming("loadTreeData.error", {
+      elapsedMs: Math.round(performance.now() - startedAt),
+      message: e.message,
+    });
   }
 }
 
@@ -380,7 +474,11 @@ function toggleAll(checked) {
 // ─── 다운로드 버튼 상태 업데이트 ───
 function updateDownloadButton() {
   const btn = document.getElementById("btnDownload");
-  const effectiveCount = getEffectiveNodes().length;
+  if (isLoadingState) {
+    btn.disabled = true;
+    return;
+  }
+  const effectiveCount = singlePageUiMode ? 1 : getEffectiveNodes().length;
   btn.disabled = effectiveCount === 0;
 }
 
@@ -478,9 +576,10 @@ function findNodeById(nodes, id) {
 
 // ─── 다운로드 실행 ───
 async function downloadSelected() {
-  const outputMode = getSelectedOutputMode();
+  const outputMode = singlePageUiMode ? OUTPUT_MODES.AI_MERGED : getSelectedOutputMode();
   const effectiveNodes = getDownloadNodesForMode(outputMode);
   if (effectiveNodes.length === 0) return;
+  const startedAt = performance.now();
 
   const overlay = document.getElementById("progressOverlay");
   const progressBar = document.getElementById("progressBar");
@@ -506,18 +605,32 @@ async function downloadSelected() {
       let response = null;
 
       if (!html) {
-        response = await chrome.tabs.sendMessage(tab.id, {
-          action: "fetchNodeHTML",
-          nodeData: {
-            rcpNo: node.rcpNo,
-            dcmNo: node.dcmNo,
-            eleId: node.eleId,
-            offset: node.offset,
-            length: node.length,
-            dtd: node.dtd,
-          },
-        });
+        if (node.mode === "singlePageFullDocument") {
+          const fetchStartedAt = performance.now();
+          response = await chrome.tabs.sendMessage(tab.id, {
+            action: "fetchSinglePageHTML",
+            docParams: singlePageDocParams,
+          });
+          logPopupTiming("fetchSinglePageHTML.done", {
+            elapsedMs: Math.round(performance.now() - fetchStartedAt),
+          });
+        } else {
+          response = await chrome.tabs.sendMessage(tab.id, {
+            action: "fetchNodeHTML",
+            nodeData: {
+              rcpNo: node.rcpNo,
+              dcmNo: node.dcmNo,
+              eleId: node.eleId,
+              offset: node.offset,
+              length: node.length,
+              dtd: node.dtd,
+            },
+          });
+        }
         html = response?.html || "";
+        if (html && node.mode === "singlePageFullDocument") {
+          node._singlePageHtml = html;
+        }
       }
 
       if (html && (!response || response.success)) {
@@ -572,6 +685,9 @@ async function downloadSelected() {
 
   let blobUrl = null;
   try {
+    if (docMetaPromise) {
+      await docMetaPromise;
+    }
     const baseName = buildDownloadBaseName();
 
     if (outputMode === OUTPUT_MODES.AI_MERGED) {
@@ -602,6 +718,11 @@ async function downloadSelected() {
         saveAs: true,
       });
     }
+    logPopupTiming("downloadSelected.done", {
+      elapsedMs: Math.round(performance.now() - startedAt),
+      mode: outputMode,
+      itemCount: successfulItems.length,
+    });
   } catch (e) {
     console.error("다운로드 파일 생성 실패:", e);
     alert("다운로드에 실패했습니다: " + e.message);

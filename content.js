@@ -2,6 +2,7 @@
 
 (function () {
   let pendingTreeResolve = null;
+  let pendingTreeStartedAt = 0;
   const FETCH_TIMEOUT_MS = 15000;
   const SINGLE_PAGE_FETCH_TIMEOUT_MS = 30000;
   const ERROR_CODES = {
@@ -30,6 +31,10 @@
     utf8: "utf-8",
     "utf-8": "utf-8",
   };
+
+  function logContentTiming(step, detail) {
+    console.info("[DART AI][content]", step, detail || "");
+  }
 
   function buildViewerUrl(params = {}) {
     const query = new URLSearchParams({
@@ -188,9 +193,17 @@
     if (event.source !== window) return;
 
     if (event.data?.type === "DART_TREE_DATA") {
+      logContentTiming("inject.result", {
+        elapsedMs: pendingTreeStartedAt
+          ? Math.round(performance.now() - pendingTreeStartedAt)
+          : null,
+        success: Boolean(event.data.success),
+        singlePage: Boolean(event.data.singlePage),
+      });
       if (pendingTreeResolve) {
         pendingTreeResolve(event.data);
         pendingTreeResolve = null;
+        pendingTreeStartedAt = 0;
       }
     }
   });
@@ -208,8 +221,14 @@
     }
 
     if (request.action === "getTreeData") {
+      const startedAt = performance.now();
       extractTreeDataViaInjection()
         .then((result) => {
+          logContentTiming("getTreeData.done", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            success: Boolean(result?.success),
+            singlePage: Boolean(result?.singlePage),
+          });
           if (!result.success && !result.errorCode) {
             result.errorCode = ERROR_CODES.TREE_DATA_UNAVAILABLE;
           }
@@ -325,8 +344,16 @@
     }
 
     if (request.action === "fetchSinglePageHTML") {
+      const startedAt = performance.now();
       Promise.resolve()
-        .then(() => sendResponse({ success: true, html: serializeCurrentDocument() }))
+        .then(() => {
+          const html = serializeCurrentDocument();
+          logContentTiming("fetchSinglePageHTML.done", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            htmlLength: html.length,
+          });
+          sendResponse({ success: true, html });
+        })
         .catch((e) =>
           sendResponse({
             success: false,
@@ -342,6 +369,8 @@
   function extractTreeDataViaInjection() {
     return new Promise((resolve, reject) => {
       pendingTreeResolve = resolve;
+      pendingTreeStartedAt = performance.now();
+      logContentTiming("inject.start", {});
 
       // 외부 스크립트 파일을 페이지 컨텍스트에 주입
       const script = document.createElement("script");
