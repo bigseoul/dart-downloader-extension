@@ -4,43 +4,135 @@
   var retryInterval = 500; // ms
   var attempt = 0;
   var targetOrigin = window.location.origin;
+  var startedAt = performance.now();
+
+  function logInjectTiming(step, detail) {
+    console.info("[DART AI][inject]", step, detail || "");
+  }
 
   function postTreeResult(payload) {
     window.postMessage(payload, targetOrigin);
   }
 
+  function getSinglePageDocParams() {
+    var currentValues =
+      typeof currentDocValues !== "undefined" ? currentDocValues : null;
+    var searchParams = new URLSearchParams(window.location.search);
+
+    var rcpNo =
+      (currentValues && currentValues.rcpNo) || searchParams.get("rcpNo") || "";
+    var dcmNo =
+      (currentValues && currentValues.dcmNo) || searchParams.get("dcmNo") || "";
+
+    if (!rcpNo || !dcmNo) {
+      return null;
+    }
+
+    return {
+      rcpNo: rcpNo,
+      dcmNo: dcmNo,
+      eleId: (currentValues && currentValues.eleId) || "0",
+      offset: (currentValues && currentValues.offset) || "0",
+      length: (currentValues && currentValues.length) || "0",
+      dtd: (currentValues && currentValues.dtd) || "HTML",
+    };
+  }
+
+  function hasSinglePageSignal() {
+    return typeof currentDocValues !== "undefined";
+  }
+
+  function postSinglePageOrError(errorMessage) {
+    if (hasSinglePageSignal()) {
+      var docParams = getSinglePageDocParams();
+      if (docParams) {
+        postTreeResult({
+          type: "DART_TREE_DATA",
+          success: true,
+          singlePage: true,
+          data: [],
+          docParams: docParams,
+        });
+        return;
+      }
+    }
+
+    postTreeResult({
+      type: "DART_TREE_DATA",
+      success: false,
+      error: errorMessage,
+    });
+  }
+
   function tryExtract() {
     attempt++;
     try {
+      var listTreeElement = document.getElementById("listTree");
+
+      // currentDocValues가 페이지에 존재할 때만 단일 페이지로 판단.
+      // URL 파라미터(rcpNo/dcmNo)는 다중 페이지 문서에도 존재하므로 신호로 쓰지 않음.
+      if (!listTreeElement && hasSinglePageSignal()) {
+        var docParams = getSinglePageDocParams();
+        if (docParams) {
+          logInjectTiming("singlePage.fast-path", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+            reason: "listTree-missing+currentDocValues",
+          });
+          postTreeResult({
+            type: "DART_TREE_DATA",
+            success: true,
+            singlePage: true,
+            data: [],
+            docParams: docParams,
+          });
+          return;
+        }
+      }
+
       if (typeof jQuery === "undefined" || !jQuery("#listTree").jstree) {
         if (attempt < maxRetries) {
+          logInjectTiming("jstree.wait", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+          });
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        postTreeResult(
-          {
-            type: "DART_TREE_DATA",
-            success: false,
-            error: "jstree를 찾을 수 없습니다. DART 문서 페이지인지 확인해주세요.",
-          }
-        );
+        postSinglePageOrError("jstree를 찾을 수 없습니다. DART 문서 페이지인지 확인해주세요.");
         return;
       }
 
       var tree = jQuery("#listTree").jstree(true);
       var rootNode = tree && tree.get_node ? tree.get_node("#") : null;
       if (!tree || !rootNode || !Array.isArray(rootNode.children) || !rootNode.children.length) {
+        if (hasSinglePageSignal() && typeof cnt !== "undefined" && Number(cnt) === 0) {
+          var emptyTocParams = getSinglePageDocParams();
+          if (emptyTocParams) {
+            logInjectTiming("singlePage.fast-path", {
+              elapsedMs: Math.round(performance.now() - startedAt),
+              attempt: attempt,
+              reason: "empty-toc",
+            });
+            postTreeResult({
+              type: "DART_TREE_DATA",
+              success: true,
+              singlePage: true,
+              data: [],
+              docParams: emptyTocParams,
+            });
+            return;
+          }
+        }
         if (attempt < maxRetries) {
+          logInjectTiming("root.wait", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+          });
           setTimeout(tryExtract, retryInterval);
           return;
         }
-        postTreeResult(
-          {
-            type: "DART_TREE_DATA",
-            success: false,
-            error: "트리 데이터가 아직 로드되지 않았습니다.",
-          }
-        );
+        postSinglePageOrError("트리 데이터가 아직 로드되지 않았습니다.");
         return;
       }
 
@@ -67,9 +159,19 @@
         return buildNodeData(tree, childId);
       });
 
+      logInjectTiming("tree.ready", {
+        elapsedMs: Math.round(performance.now() - startedAt),
+        attempt: attempt,
+        rootCount: rootChildren.length,
+      });
       postTreeResult({ type: "DART_TREE_DATA", success: true, data: data });
     } catch (e) {
       if (attempt < maxRetries) {
+        logInjectTiming("extract.retry", {
+          elapsedMs: Math.round(performance.now() - startedAt),
+          attempt: attempt,
+          message: e.message,
+        });
         setTimeout(tryExtract, retryInterval);
         return;
       }

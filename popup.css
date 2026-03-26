@@ -72,27 +72,28 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 12px 16px 10px;
+  padding: 11px 16px 9px;
   background: var(--md-primary);
   color: var(--md-on-primary);
   min-height: 56px;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .app-bar-title {
-  font-size: 16px;
-  font-weight: 500;
+  font-size: 15px;
+  font-weight: 600;
   letter-spacing: 0.01em;
-  line-height: 1.4;
+  line-height: 1.3;
 }
 
 .app-bar-subtitle {
   font-size: 11px;
-  opacity: 0.85;
-  margin-top: 1px;
+  opacity: 0.9;
+  margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.4;
+  line-height: 1.25;
 }
 
 /* ─── Toolbar ─── */
@@ -101,7 +102,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 48px;
+  height: 44px;
   padding: 0 12px;
   background: var(--md-surface-container-low);
   border-bottom: 1px solid var(--md-outline-variant);
@@ -120,9 +121,9 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 32px;
+  height: 30px;
   line-height: 1;
-  padding: 0 12px;
+  padding: 0 11px;
   border-radius: var(--md-shape-full);
   font-family: inherit;
   font-size: 12px;
@@ -161,8 +162,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   line-height: 1;
   border: none;
   border-radius: 50%;
@@ -188,13 +189,9 @@ body {
 .state-loading {
   flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 16px;
   padding: 40px 24px;
-  color: var(--md-on-surface-variant);
-  font-size: 13px;
 }
 
 .spinner {
@@ -220,11 +217,36 @@ body {
   text-align: center;
 }
 
+.single-page-notice {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 24px;
+  text-align: center;
+}
+
+.single-page-notice-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  line-height: 1.3;
+}
+
+.single-page-notice-text {
+  max-width: 280px;
+  font-size: 13px;
+  color: var(--md-on-surface-variant);
+  line-height: 1.55;
+}
+
 /* ─── Tree Scroll Area ─── */
 .tree-scroll {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 0;
+  padding: 4px 0 6px;
   overscroll-behavior: contain;
 }
 
@@ -249,22 +271,22 @@ body {
 .tree-node-row {
   display: flex;
   align-items: center;
-  padding: 5px 8px;
-  margin: 1px 6px;
+  padding: 4px 8px;
+  margin: 1px 8px;
   border-radius: var(--md-shape-sm);
   cursor: pointer;
   transition: background var(--md-easing-standard) 120ms;
-  min-height: 36px;
+  min-height: 34px;
 }
 
 .tree-node-row:hover {
-  background: color-mix(in srgb, var(--md-primary) 8%, transparent);
+  background: color-mix(in srgb, var(--md-primary) 6%, transparent);
 }
 
 /* Toggle icon (▶, rotates when expanded) */
 .tree-toggle {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -296,7 +318,7 @@ body {
   -webkit-appearance: none;
   width: 18px;
   height: 18px;
-  margin: 0 8px 0 2px;
+  margin: 0 8px 0 4px;
   flex-shrink: 0;
   cursor: pointer;
   border: 2px solid var(--md-on-surface-variant);
@@ -378,21 +400,21 @@ body {
 .tree-label.level-0 {
   font-size: 13px;
   font-weight: 600;
-  color: var(--md-on-primary-container);
+  color: #203047;
 }
 
 .tree-label.level-1 {
-  font-weight: 400;
+  font-weight: 500;
 }
 
 .tree-label.level-2 {
   font-weight: 400;
   font-size: 12px;
-  color: var(--md-on-surface-variant);
+  color: #5a6170;
 }
 
 .tree-children {
-  padding-left: 16px;
+  padding-left: 14px;
 }
 
 .tree-children.collapsed {
@@ -403,82 +425,95 @@ body {
 .bottom-bar {
   flex-shrink: 0;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 12px;
+  flex-direction: column;
+  align-items: stretch;
+  padding: 10px 12px 12px;
   background: var(--md-surface-container-low);
   border-top: 1px solid var(--md-outline-variant);
-  gap: 8px;
+  box-shadow: 0 -4px 16px rgba(27, 27, 31, 0.04);
+  gap: 10px;
 }
 
-/* ─── M3 Switch ─── */
-.switch-wrap {
+/* ─── Output Mode Panel ─── */
+.mode-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.mode-panel-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--md-on-surface-variant);
+  letter-spacing: 0.01em;
+}
+
+.mode-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding: 3px;
+  border-radius: 18px;
+  border: 1px solid var(--md-outline-variant);
+  background: color-mix(in srgb, var(--md-surface) 88%, var(--md-surface-container) 12%);
+}
+
+.mode-option {
+  position: relative;
+  cursor: pointer;
+}
+
+.mode-option-input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.mode-option-body {
   display: flex;
   align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.switch-input {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-  pointer-events: none;
-}
-
-.switch-track {
-  position: relative;
-  display: block;
-  flex-shrink: 0;
-  width: 52px;
-  height: 32px;
-  border-radius: var(--md-shape-full);
-  background: var(--md-surface-container-high);
-  border: 2px solid var(--md-outline);
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 10px;
+  border-radius: 14px;
+  border: 1px solid transparent;
+  background: transparent;
   transition:
-    background var(--md-easing-standard) 200ms,
-    border-color var(--md-easing-standard) 200ms;
+    border-color var(--md-easing-standard) 150ms,
+    background var(--md-easing-standard) 150ms,
+    box-shadow var(--md-easing-standard) 150ms;
 }
 
-/* Thumb */
-.switch-track::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 6px;
-  transform: translateY(-50%);
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--md-outline);
-  transition:
-    transform var(--md-easing-emphasized) 250ms,
-    width var(--md-easing-standard) 200ms,
-    height var(--md-easing-standard) 200ms,
-    left var(--md-easing-standard) 200ms,
-    background var(--md-easing-standard) 200ms;
+.mode-option:hover .mode-option-body {
+  background: color-mix(in srgb, var(--md-primary) 6%, transparent);
 }
 
-.switch-input:checked ~ .switch-track {
-  background: var(--md-primary);
+.mode-option-input:checked + .mode-option-body {
+  background: var(--md-primary-container);
   border-color: var(--md-primary);
+  box-shadow: 0 2px 8px rgba(27, 110, 243, 0.14);
 }
 
-.switch-input:checked ~ .switch-track::after {
-  width: 24px;
-  height: 24px;
-  left: 2px;
-  transform: translateY(-50%) translateX(22px);
-  background: var(--md-on-primary);
+.mode-option-input:focus-visible + .mode-option-body {
+  outline: 2px solid var(--md-primary);
+  outline-offset: 2px;
 }
 
-.switch-label-text {
+.mode-option-title {
   font-size: 12px;
-  font-weight: 500;
+  font-weight: 600;
+  color: var(--md-on-surface);
+  line-height: 1;
+  text-align: center;
+}
+
+.mode-helper {
+  font-size: 11px;
   color: var(--md-on-surface-variant);
-  white-space: nowrap;
+  line-height: 1.35;
+  min-height: 15px;
+  padding: 0 2px;
+  text-align: center;
 }
 
 /* ─── M3 Filled Button ─── */
@@ -503,12 +538,26 @@ body {
     box-shadow var(--md-easing-standard) 150ms;
 }
 
+.btn-download {
+  width: 100%;
+  height: auto;
+  min-height: 44px;
+  padding: 0 16px;
+  line-height: 1;
+}
+
+.btn-download #downloadLabel {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1;
+}
+
 .btn-filled:hover:not(:disabled) {
   box-shadow: 0 1px 2px rgba(0,0,0,0.12), 0 2px 6px rgba(0,0,0,0.10);
 }
 
 .btn-filled:disabled {
-  background: color-mix(in srgb, var(--md-on-surface) 12%, transparent);
+  background: color-mix(in srgb, var(--md-on-surface) 15%, var(--md-surface) 85%);
   color: color-mix(in srgb, var(--md-on-surface) 38%, transparent);
   cursor: default;
   box-shadow: none;

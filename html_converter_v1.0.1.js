@@ -1,5 +1,5 @@
 // html_converter.js - HTML을 structured text로 변환
-// Python rag/utils/html_converter.py의 현재 동작을 포팅한다.
+// Python util/html_converter.py를 기준으로 유지한다.
 
 const NOISE_TAGS = new Set([
   "script",
@@ -21,21 +21,6 @@ const NOISE_TAGS = new Set([
 
 const TABLE_SECTION_TAGS = new Set(["THEAD", "TBODY", "TFOOT"]);
 const DART_HEADING_CLASSES = new Set(["section-2", "table-group-xbrl"]);
-const NOTE_ROW_SUFFIXES = [
-  "에 대한 기술",
-  "에 대한 설명",
-  "에 관한 설명",
-  "에 대한 내역",
-  "에 관한 내역",
-];
-const PAYLOAD_LINE_PREFIXES = [
-  "HEADER:",
-  "ROW:",
-  "HEADER_RAW:",
-  "ROW_RAW:",
-  "NOTE_ROW:",
-  "NOTE_ROW_RAW:",
-];
 
 function buildStructuredText(htmlText, sourceName) {
   const parser = new DOMParser();
@@ -46,8 +31,6 @@ function buildStructuredText(htmlText, sourceName) {
 
   const outputLines = [`DOCUMENT: ${sourceName}`];
   const seenTables = new Set();
-  const elements = [];
-  let currentHeading = "";
 
   const body = doc.body || doc.documentElement;
   const walker = doc.createTreeWalker(body, NodeFilter.SHOW_ELEMENT);
@@ -60,13 +43,90 @@ function buildStructuredText(htmlText, sourceName) {
       }
       seenTables.add(node);
 
-      const tableBlock = _classifyTableBlock(
-        _structuredLinesFromTable(node, currentHeading)
-      );
-      if (tableBlock.kind === "empty") {
+      const caption = _tableCaption(node);
+      const gridRows = _buildTableGrid(node);
+      if (!gridRows.length) {
         continue;
       }
-      elements.push(tableBlock);
+
+      outputLines.push(`TABLE: ${caption}`);
+      let [headers, startIndex] = _headerLabels(node, gridRows);
+      const dataRows = gridRows.slice(startIndex).map(({ row }) => row);
+
+      if (_shouldMergeStubColumns(headers, dataRows)) {
+        headers = _mergeStubHeaders(headers);
+      }
+
+      let [collapsedHeaders] = _collapseAdjacentHeaderGroups(
+        headers,
+        new Array(headers.length).fill("")
+      );
+      collapsedHeaders = _normalizeFirstHeaderLabel(collapsedHeaders);
+
+      if (collapsedHeaders.length === 1) {
+        const [singleColumnKind, proseLines] = _classifySingleColumnTable(
+          node,
+          collapsedHeaders,
+          dataRows.length ? dataRows : gridRows.map(({ row }) => row),
+          startIndex
+        );
+        if (singleColumnKind === "prose") {
+          outputLines.push(..._formatProseLines(proseLines));
+          outputLines.push("");
+          continue;
+        }
+      }
+
+      if (!dataRows.length) {
+        outputLines.push(..._metaLinesFromHeaders(collapsedHeaders));
+        outputLines.push("");
+        continue;
+      }
+
+      if (_isMetadataTable(collapsedHeaders, dataRows)) {
+        for (const row of dataRows) {
+          const [, collapsedRow] = _collapseAdjacentHeaderGroups(headers, row);
+          const values = _dedupeAdjacentValues(collapsedRow);
+          if (values.length) {
+            outputLines.push(`META: ${values.join(" | ")}`);
+          }
+        }
+        outputLines.push("");
+        continue;
+      }
+
+      if (_shouldUseRawTableFallback(collapsedHeaders)) {
+        const rawHeaders = _leafHeaderLabels(collapsedHeaders);
+        outputLines.push(`HEADER_RAW: ${rawHeaders.join(" | ")}`);
+        for (const row of dataRows) {
+          const [effectiveHeaders, effectiveRowBeforeNormalize] =
+            _collapseAdjacentHeaderGroups(headers, row);
+          const effectiveRow = _normalizeSummaryRow(effectiveRowBeforeNormalize);
+          const rawPairs = _rowPairs(
+            _leafHeaderLabels(effectiveHeaders),
+            effectiveRow
+          );
+          if (rawPairs.length) {
+            outputLines.push(`ROW_RAW: ${rawPairs.join(" | ")}`);
+          }
+        }
+        outputLines.push("");
+        continue;
+      }
+
+      if (collapsedHeaders.length) {
+        outputLines.push(`HEADER: ${collapsedHeaders.join(" | ")}`);
+      }
+      for (const row of dataRows) {
+        const [effectiveHeaders, effectiveRowBeforeNormalize] =
+          _collapseAdjacentHeaderGroups(headers, row);
+        const effectiveRow = _normalizeSummaryRow(effectiveRowBeforeNormalize);
+        const pairs = _rowPairs(effectiveHeaders, effectiveRow);
+        if (pairs.length) {
+          outputLines.push(`ROW: ${pairs.join(" | ")}`);
+        }
+      }
+      outputLines.push("");
       continue;
     }
 
@@ -77,8 +137,7 @@ function buildStructuredText(htmlText, sourceName) {
     if (_isSectionHeadingTag(node)) {
       const text = _normalizedText(node);
       if (text) {
-        currentHeading = text;
-        elements.push(`SECTION: ${text}`);
+        outputLines.push(`SECTION: ${text}`);
       }
       continue;
     }
@@ -89,22 +148,13 @@ function buildStructuredText(htmlText, sourceName) {
       });
       for (const text of logicalLines) {
         if (_shouldPromoteProseLineToSection(text)) {
-          elements.push(`SECTION: ${text}`);
+          outputLines.push(`SECTION: ${text}`);
           continue;
         }
         const prefix = node.tagName === "LI" ? "- " : "";
-        elements.push(`${prefix}${text}`);
+        outputLines.push(`${prefix}${text}`);
       }
     }
-  }
-
-  for (const element of _mergeAdjacentTableBlocks(elements)) {
-    if (typeof element === "string") {
-      outputLines.push(element);
-      continue;
-    }
-    outputLines.push(...element.lines);
-    outputLines.push("");
   }
 
   const compactLines = [];
@@ -132,9 +182,7 @@ function _stripComments(doc) {
   while (walker.nextNode()) {
     comments.push(walker.currentNode);
   }
-  for (const comment of comments) {
-    comment.parentNode?.removeChild(comment);
-  }
+  comments.forEach((comment) => comment.parentNode?.removeChild(comment));
 }
 
 function _removeNoiseTags(doc) {
@@ -177,20 +225,6 @@ function _cloneElement(node) {
   return node ? node.cloneNode(true) : null;
 }
 
-function _joinedTextNodes(node, separator) {
-  const walker = (node.ownerDocument || document).createTreeWalker(
-    node,
-    NodeFilter.SHOW_TEXT
-  );
-  const parts = [];
-
-  while (walker.nextNode()) {
-    parts.push(walker.currentNode.textContent || "");
-  }
-
-  return parts.join(separator);
-}
-
 function _logicalLinesFromNode(node, options = {}) {
   const { stripDescendantBlocks = false } = options;
   const clonedNode = _cloneElement(node);
@@ -210,6 +244,20 @@ function _logicalLinesFromNode(node, options = {}) {
   return _normalizedLines(_joinedTextNodes(clonedNode, "\n"));
 }
 
+function _joinedTextNodes(node, separator) {
+  const walker = (node.ownerDocument || document).createTreeWalker(
+    node,
+    NodeFilter.SHOW_TEXT
+  );
+  const parts = [];
+
+  while (walker.nextNode()) {
+    parts.push(walker.currentNode.textContent || "");
+  }
+
+  return parts.join(separator);
+}
+
 function _isDartHeadingTag(node) {
   if (node.tagName !== "P") {
     return false;
@@ -223,14 +271,66 @@ function _isSectionHeadingTag(node) {
   return /^H[1-6]$/.test(node.tagName) || _isDartHeadingTag(node);
 }
 
-function _tableCaption(table, currentHeading = "") {
+function _previousElement(node) {
+  if (!node) {
+    return null;
+  }
+
+  if (node.previousElementSibling) {
+    let current = node.previousElementSibling;
+    while (current.lastElementChild) {
+      current = current.lastElementChild;
+    }
+    return current;
+  }
+
+  return node.parentElement;
+}
+
+function _previousTableHeading(table) {
+  let previous = _previousElement(table);
+  while (previous) {
+    if (
+      previous !== table &&
+      previous.tagName !== "TABLE" &&
+      previous.closest("table")
+    ) {
+      previous = _previousElement(previous);
+      continue;
+    }
+
+    if (previous.tagName === "TABLE") {
+      if (_buildTableGrid(previous).length) {
+        break;
+      }
+      previous = _previousElement(previous);
+      continue;
+    }
+
+    if (_isDartHeadingTag(previous) || /^H[1-6]$/.test(previous.tagName)) {
+      const text = _normalizedText(previous);
+      if (text) {
+        return text;
+      }
+    }
+
+    previous = _previousElement(previous);
+  }
+
+  return "";
+}
+
+function _tableCaption(table) {
   const caption = _normalizedText(table.querySelector("caption"));
   if (caption) {
     return caption;
   }
-  if (currentHeading) {
-    return currentHeading;
+
+  const previousHeading = _previousTableHeading(table);
+  if (previousHeading) {
+    return previousHeading;
   }
+
   return "표";
 }
 
@@ -471,20 +571,6 @@ function _rowPairs(headers, row) {
     .filter(Boolean);
 }
 
-function _isNoteRow(accountLabel) {
-  const normalized = accountLabel.replace(/\s+/g, " ").trim();
-  return NOTE_ROW_SUFFIXES.some(
-    (suffix) => normalized.endsWith(suffix) || normalized.includes(`${suffix},`)
-  );
-}
-
-function _rowLinePrefix(accountLabel, { raw }) {
-  if (_isNoteRow(accountLabel)) {
-    return raw ? "NOTE_ROW_RAW:" : "NOTE_ROW:";
-  }
-  return raw ? "ROW_RAW:" : "ROW:";
-}
-
 function _isSummaryLabel(value) {
   const normalized = value.replace(/\s+/g, "");
   return ["합계", "소계", "총계", "계"].includes(normalized);
@@ -519,39 +605,16 @@ function _normalizeSummaryRow(row) {
   return normalizedRow;
 }
 
-function _headerParts(header) {
-  return header
-    .split(/\s+\/\s+/)
-    .map((part) => part.trim())
-    .filter(Boolean);
-}
-
 function _leafHeaderLabels(headers) {
   const leafHeaders = headers.map((header) => {
-    const parts = _headerParts(header);
+    const parts = header
+      .split(/\s+\/\s+/)
+      .map((part) => part.trim())
+      .filter(Boolean);
 
     if (parts.length >= 3) {
       return parts.slice(-2).join(" / ");
     }
-    if (parts.length) {
-      return parts[parts.length - 1];
-    }
-    return header;
-  });
-
-  return _normalizeFirstHeaderLabel(leafHeaders);
-}
-
-function _groupedLeafHeaderLabels(headers, groupName) {
-  if (!groupName) {
-    return _leafHeaderLabels(headers);
-  }
-
-  const leafHeaders = headers.map((header, index) => {
-    if (index === 0) {
-      return header;
-    }
-    const parts = _headerParts(header);
     if (parts.length) {
       return parts[parts.length - 1];
     }
@@ -600,22 +663,17 @@ function _mergeStubHeaders(headers) {
 
 function _collapseAdjacentHeaderGroups(headers, row) {
   if (!headers.length) {
-    return [row.map((_, index) => `col${index + 1}`), row];
-  }
-
-  const effectiveHeaders = [...headers];
-  while (effectiveHeaders.length < row.length) {
-    effectiveHeaders.push(`col${effectiveHeaders.length + 1}`);
+    return [headers, row];
   }
 
   const collapsedHeaders = [];
   const collapsedRow = [];
   let index = 0;
 
-  while (index < effectiveHeaders.length) {
-    const label = effectiveHeaders[index];
+  while (index < headers.length) {
+    const label = headers[index];
     let nextIndex = index + 1;
-    while (nextIndex < effectiveHeaders.length && effectiveHeaders[nextIndex] === label) {
+    while (nextIndex < headers.length && headers[nextIndex] === label) {
       nextIndex += 1;
     }
 
@@ -739,7 +797,7 @@ function _classifySingleColumnTable(table, headers, rows, startIndex) {
   const textLength = lines.reduce((sum, line) => sum + line.length, 0);
   const sectionLikeCount = _countPatternMatches(
     lines,
-    "^(?:\\d+\\.\\d+\\s*\\S|[가-힣]\\.\\s+)"
+    "^(?:\\\\d+\\\\.\\\\d+\\\\s*\\\\S|[가-힣]\\\\.\\\\s+)"
   );
 
   if (textLength > 500) {
@@ -794,267 +852,4 @@ function _metaLinesFromHeaders(headers) {
     return [];
   }
   return [`META: ${values.join(" | ")}`];
-}
-
-function _commonPrefixDepth(partsList) {
-  if (!partsList.length) {
-    return 0;
-  }
-
-  const minLength = Math.min(...partsList.map((parts) => parts.length));
-  let depth = 0;
-  while (depth < minLength) {
-    const candidate = partsList[0][depth];
-    if (partsList.slice(1).some((parts) => parts[depth] !== candidate)) {
-      break;
-    }
-    depth += 1;
-  }
-  return depth;
-}
-
-function _topLevelGroup(header, commonPrefixDepth) {
-  const parts = _headerParts(header);
-  if (!parts.length) {
-    return header;
-  }
-  if (commonPrefixDepth < parts.length) {
-    return parts[commonPrefixDepth];
-  }
-  return parts[parts.length - 1];
-}
-
-function _rawHeaderGroups(headers) {
-  if (headers.length <= 1) {
-    return [];
-  }
-
-  const headerPartsList = headers.slice(1).map((header) => _headerParts(header));
-  const commonPrefixDepth = _commonPrefixDepth(headerPartsList.filter(Boolean));
-  const groups = [];
-  const groupIndexes = new Map();
-
-  headers.slice(1).forEach((header, offset) => {
-    const index = offset + 1;
-    const groupName = _topLevelGroup(header, commonPrefixDepth);
-    if (!groupIndexes.has(groupName)) {
-      groupIndexes.set(groupName, groups.length);
-      groups.push([groupName, [0, index]]);
-      return;
-    }
-    groups[groupIndexes.get(groupName)][1].push(index);
-  });
-
-  if (groups.length <= 1 || groups.every(([, indexes]) => indexes.length === 2)) {
-    return [["", Array.from({ length: headers.length }, (_, index) => index)]];
-  }
-
-  return groups;
-}
-
-function _selectColumns(values, indexes) {
-  const selected = [];
-  for (const index of indexes) {
-    if (index < values.length) {
-      selected.push(values[index]);
-    }
-  }
-  return selected;
-}
-
-function _createStructuredTableBlock(kind, caption, lines) {
-  return {
-    kind,
-    caption,
-    lines,
-    get hasPayload() {
-      return this.lines.some((line) =>
-        PAYLOAD_LINE_PREFIXES.some((prefix) => line.startsWith(prefix))
-      );
-    },
-  };
-}
-
-function _extractTableCaption(lines) {
-  if (!lines.length || !lines[0].startsWith("TABLE: ")) {
-    return "";
-  }
-  return lines[0].slice("TABLE: ".length).trim();
-}
-
-function _classifyTableBlock(lines) {
-  const caption = _extractTableCaption(lines);
-  if (!lines.length) {
-    return _createStructuredTableBlock("empty", caption, []);
-  }
-
-  const bodyLines = lines.slice(1);
-  const hasMeta = bodyLines.some((line) => line.startsWith("META:"));
-  const hasPayload = bodyLines.some((line) =>
-    PAYLOAD_LINE_PREFIXES.some((prefix) => line.startsWith(prefix))
-  );
-  const hasNonPrefixLines = lines.some(
-    (line) => !line.startsWith("TABLE:") && !line.startsWith("META:")
-  );
-
-  if (lines.length === 1 && lines[0] === "TABLE: 표") {
-    return _createStructuredTableBlock("empty", caption, []);
-  }
-  if (!hasMeta && !hasPayload && !hasNonPrefixLines) {
-    return _createStructuredTableBlock("empty", caption, []);
-  }
-  if (hasMeta && !hasPayload && !hasNonPrefixLines) {
-    return _createStructuredTableBlock("meta", caption, lines);
-  }
-  return _createStructuredTableBlock("data", caption, lines);
-}
-
-function _captionsCompatible(metaCaption, dataCaption) {
-  if (metaCaption === dataCaption) {
-    return true;
-  }
-  return ["", "표"].includes(metaCaption) || ["", "표"].includes(dataCaption);
-}
-
-function _mergeAdjacentTableBlocks(elements) {
-  const merged = [];
-  let index = 0;
-
-  while (index < elements.length) {
-    const current = elements[index];
-    const next = elements[index + 1];
-    if (
-      current &&
-      typeof current !== "string" &&
-      current.kind === "meta" &&
-      next &&
-      typeof next !== "string" &&
-      next.kind === "data" &&
-      next.hasPayload &&
-      _captionsCompatible(current.caption, next.caption)
-    ) {
-      let caption = next.caption || current.caption || "표";
-      if (["", "표"].includes(caption) && !["", "표"].includes(current.caption)) {
-        caption = current.caption;
-      }
-      merged.push(
-        _createStructuredTableBlock("data", caption, [
-          `TABLE: ${caption}`,
-          ...current.lines.slice(1),
-          ...next.lines.slice(1),
-        ])
-      );
-      index += 2;
-      continue;
-    }
-
-    merged.push(current);
-    index += 1;
-  }
-
-  return merged;
-}
-
-function _structuredLinesFromTable(node, currentHeading = "") {
-  const caption = _tableCaption(node, currentHeading);
-  const gridRows = _buildTableGrid(node);
-  if (!gridRows.length) {
-    return [];
-  }
-
-  const outputLines = [`TABLE: ${caption}`];
-  let [headers, startIndex] = _headerLabels(node, gridRows);
-  const dataRows = gridRows.slice(startIndex).map(({ row }) => row);
-
-  if (_shouldMergeStubColumns(headers, dataRows)) {
-    headers = _mergeStubHeaders(headers);
-  }
-
-  let [collapsedHeaders] = _collapseAdjacentHeaderGroups(
-    headers,
-    new Array(headers.length).fill("")
-  );
-  collapsedHeaders = _normalizeFirstHeaderLabel(collapsedHeaders);
-
-  if (collapsedHeaders.length === 1) {
-    const [singleColumnKind, proseLines] = _classifySingleColumnTable(
-      node,
-      collapsedHeaders,
-      dataRows.length ? dataRows : gridRows.map(({ row }) => row),
-      startIndex
-    );
-    if (singleColumnKind === "prose") {
-      outputLines.push(..._formatProseLines(proseLines));
-      return outputLines;
-    }
-  }
-
-  if (!dataRows.length) {
-    outputLines.push(..._metaLinesFromHeaders(collapsedHeaders));
-    return outputLines;
-  }
-
-  if (_isMetadataTable(collapsedHeaders, dataRows)) {
-    for (const row of dataRows) {
-      const [, collapsedRow] = _collapseAdjacentHeaderGroups(headers, row);
-      const values = _dedupeAdjacentValues(collapsedRow);
-      if (values.length) {
-        outputLines.push(`META: ${values.join(" | ")}`);
-      }
-    }
-    return outputLines;
-  }
-
-  if (_shouldUseRawTableFallback(collapsedHeaders)) {
-    let groups = _rawHeaderGroups(collapsedHeaders);
-    if (!groups.length) {
-      groups = [["", Array.from({ length: collapsedHeaders.length }, (_, index) => index)]];
-    }
-    const collapsedRows = dataRows.map((row) =>
-      _normalizeSummaryRow(_collapseAdjacentHeaderGroups(headers, row)[1])
-    );
-
-    for (const [groupName, indexes] of groups) {
-      const selectedHeaders = _selectColumns(collapsedHeaders, indexes);
-      const rawHeaders = _groupedLeafHeaderLabels(selectedHeaders, groupName);
-      if (groupName) {
-        outputLines.push(`GROUP: ${groupName}`);
-      }
-      outputLines.push(`HEADER_RAW: ${rawHeaders.join(" | ")}`);
-
-      for (const collapsedRow of collapsedRows) {
-        const selectedRow = _selectColumns(collapsedRow, indexes);
-        const rawPairs = _rowPairs(rawHeaders, selectedRow);
-        if (!rawPairs.length) {
-          continue;
-        }
-        const prefix = _rowLinePrefix(selectedRow[0] || "", { raw: true });
-        outputLines.push(`${prefix} ${rawPairs.join(" | ")}`);
-      }
-    }
-    return outputLines;
-  }
-
-  if (collapsedHeaders.length) {
-    outputLines.push(`HEADER: ${collapsedHeaders.join(" | ")}`);
-  }
-
-  for (const row of dataRows) {
-    const [effectiveHeaders, effectiveRowBeforeNormalize] =
-      _collapseAdjacentHeaderGroups(headers, row);
-    const effectiveRow = _normalizeSummaryRow(effectiveRowBeforeNormalize);
-    const pairs = _rowPairs(effectiveHeaders, effectiveRow);
-    if (pairs.length) {
-      const prefix = _rowLinePrefix(effectiveRow[0] || "", { raw: false });
-      outputLines.push(`${prefix} ${pairs.join(" | ")}`);
-    }
-  }
-
-  return outputLines;
-}
-
-if (typeof module !== "undefined" && module.exports) {
-  module.exports = {
-    buildStructuredText,
-  };
 }

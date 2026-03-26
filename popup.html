@@ -16,7 +16,7 @@
   </header>
 
   <!-- Toolbar: tree selection + expand/collapse controls -->
-  <div class="toolbar" role="toolbar" aria-label="트리 컨트롤">
+  <div class="toolbar" id="toolbar" role="toolbar" aria-label="트리 컨트롤">
     <div class="toolbar-start">
       <button class="chip chip--filled" id="btnSelectAll" title="전체 선택">전체 선택</button>
       <button class="chip chip--outlined" id="btnDeselectAll" title="선택 해제">선택 해제</button>
@@ -42,24 +42,44 @@
   <!-- Loading state -->
   <div id="loading" class="state-loading">
     <div class="spinner" role="progressbar" aria-label="로딩 중"></div>
-    <span>목차를 불러오는 중...</span>
   </div>
 
   <!-- Error state -->
   <div id="error" class="state-error" style="display:none;" role="alert"></div>
 
+  <!-- Single page mode -->
+  <div id="singlePageNotice" class="single-page-notice" style="display:none;">
+    <p class="single-page-notice-title">전체 문서 저장</p>
+    <p class="single-page-notice-text">단일 문서는 전체 문서를 한 파일로 저장합니다.</p>
+  </div>
+
   <!-- Tree -->
   <div id="treeContainer" class="tree-scroll" style="display:none;" role="tree"></div>
 
   <!-- Bottom action bar -->
-  <div class="bottom-bar">
-    <label class="switch-wrap" title="HTML 형식으로 다운로드">
-      <input type="checkbox" id="chkDownloadHtml" class="switch-input">
-      <span class="switch-track" aria-hidden="true"></span>
-      <span class="switch-label-text">HTML</span>
-    </label>
-    <button class="btn-filled" id="btnDownload" disabled>
-      다운로드&nbsp;<span id="selectedCount">0</span>건
+  <div class="bottom-bar" id="bottomBar">
+    <div class="mode-panel" id="modePanel" role="radiogroup" aria-label="저장 방식">
+      <p class="mode-panel-title">저장 방식</p>
+      <div class="mode-options">
+        <label class="mode-option">
+          <input type="radio" name="outputMode" value="ai-merged" class="mode-option-input" checked>
+          <span class="mode-option-body">
+            <span class="mode-option-title">합쳐 저장</span>
+          </span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="outputMode" value="ai-zip" class="mode-option-input">
+          <span class="mode-option-body">
+            <span class="mode-option-title">따로 저장</span>
+          </span>
+        </label>
+      </div>
+      <p class="mode-helper" id="outputModeHelper">
+        선택한 내용을 AI 입력용 텍스트로 저장합니다.
+      </p>
+    </div>
+    <button class="btn-filled btn-download" id="btnDownload" disabled>
+      <span id="downloadLabel">합쳐 저장</span>
     </button>
   </div>
 
@@ -76,6 +96,7 @@
 
   <script src="lib/jszip.min.js"></script>
   <script src="html_converter.js"></script>
+  <script src="section-splitter.js"></script>
   <script src="popup.js"></script>
 </body>
 
