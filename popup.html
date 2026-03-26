@@ -54,36 +54,27 @@
   <!-- Bottom action bar -->
   <div class="bottom-bar">
     <div class="mode-panel" role="radiogroup" aria-label="저장 방식">
-      <div class="mode-panel-header">
-        <p class="mode-panel-title">저장 방식</p>
-        <p class="mode-panel-caption">출력 형식 선택</p>
-      </div>
+      <p class="mode-panel-title">저장 방식</p>
       <div class="mode-options">
         <label class="mode-option">
           <input type="radio" name="outputMode" value="ai-merged" class="mode-option-input" checked>
           <span class="mode-option-body">
-            <span class="mode-option-title">통합 TXT</span>
+            <span class="mode-option-title">합쳐 저장</span>
           </span>
         </label>
         <label class="mode-option">
           <input type="radio" name="outputMode" value="ai-zip" class="mode-option-input">
           <span class="mode-option-body">
-            <span class="mode-option-title">분리 ZIP</span>
-          </span>
-        </label>
-        <label class="mode-option">
-          <input type="radio" name="outputMode" value="html-zip" class="mode-option-input">
-          <span class="mode-option-body">
-            <span class="mode-option-title">HTML ZIP</span>
+            <span class="mode-option-title">따로 저장</span>
           </span>
         </label>
       </div>
       <p class="mode-helper" id="outputModeHelper">
-        AI 입력용은 HTML을 정리한 텍스트 형식입니다.
+        선택한 내용을 AI 입력용 텍스트로 저장합니다.
       </p>
     </div>
     <button class="btn-filled btn-download" id="btnDownload" disabled>
-      <span id="downloadLabel">AI 입력용 통합 저장</span>
+      <span id="downloadLabel">합쳐 저장</span>
     </button>
   </div>
 

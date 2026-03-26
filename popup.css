@@ -420,13 +420,6 @@ body {
   gap: 7px;
 }
 
-.mode-panel-header {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-}
-
 .mode-panel-title {
   font-size: 12px;
   font-weight: 600;
@@ -434,15 +427,9 @@ body {
   letter-spacing: 0.01em;
 }
 
-.mode-panel-caption {
-  font-size: 11px;
-  color: color-mix(in srgb, var(--md-on-surface-variant) 84%, transparent);
-  line-height: 1.3;
-}
-
 .mode-options {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0;
   padding: 3px;
   border-radius: 18px;
@@ -473,8 +460,7 @@ body {
   transition:
     border-color var(--md-easing-standard) 150ms,
     background var(--md-easing-standard) 150ms,
-    box-shadow var(--md-easing-standard) 150ms,
-    transform var(--md-easing-emphasized) 180ms;
+    box-shadow var(--md-easing-standard) 150ms;
 }
 
 .mode-option:hover .mode-option-body {
@@ -485,7 +471,6 @@ body {
   background: var(--md-primary-container);
   border-color: var(--md-primary);
   box-shadow: 0 2px 8px rgba(27, 110, 243, 0.14);
-  transform: translateY(-1px);
 }
 
 .mode-option-input:focus-visible + .mode-option-body {
@@ -507,6 +492,7 @@ body {
   line-height: 1.35;
   min-height: 15px;
   padding: 0 2px;
+  text-align: center;
 }
 
 /* ─── M3 Filled Button ─── */

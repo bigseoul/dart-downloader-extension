@@ -7,7 +7,6 @@ let singlePageDocParams = null;
 const OUTPUT_MODES = {
   AI_MERGED: "ai-merged",
   AI_ZIP: "ai-zip",
-  HTML_ZIP: "html-zip",
 };
 const DART_PAGE_PATTERN = /^https:\/\/dart[12]?\.fss\.or\.kr\/dsaf001\/main\.do/;
 const POPUP_ERROR_MESSAGES = {
@@ -76,14 +75,11 @@ function updateOutputModeUI() {
 
   if (helper && label) {
     if (mode === OUTPUT_MODES.AI_MERGED) {
-      helper.textContent = "선택 섹션을 AI 입력용 텍스트 1개 파일로 정리해 저장합니다.";
-      label.textContent = "통합 TXT 저장";
-    } else if (mode === OUTPUT_MODES.AI_ZIP) {
-      helper.textContent = "선택 섹션마다 AI 입력용 텍스트를 만들고 ZIP으로 묶어 저장합니다.";
-      label.textContent = "분리 ZIP 저장";
+      helper.textContent = "선택한 내용을 하나의 AI 입력용 텍스트 파일로 저장합니다.";
+      label.textContent = "합쳐 저장";
     } else {
-      helper.textContent = "변환 없이 원본 HTML을 섹션별 파일로 묶어 ZIP으로 저장합니다.";
-      label.textContent = "HTML ZIP 저장";
+      helper.textContent = "선택한 내용을 항목별 AI 입력용 텍스트 파일로 나눠 ZIP에 담아 저장합니다.";
+      label.textContent = "따로 저장";
     }
   }
 
@@ -579,7 +575,7 @@ async function downloadSelected() {
     const baseName = buildDownloadBaseName();
 
     if (outputMode === OUTPUT_MODES.AI_MERGED) {
-      const fileName = `${baseName}_ai_input.txt`;
+      const fileName = `${baseName}.txt`;
       const mergedText = buildMergedStructuredText(successfulItems, fileName);
       const blob = new Blob([mergedText], { type: "text/plain;charset=utf-8" });
       blobUrl = URL.createObjectURL(blob);
@@ -593,23 +589,16 @@ async function downloadSelected() {
 
       successfulItems.forEach((item) => {
         const fullName = `${baseName}_${item.safeName}`;
-        if (outputMode === OUTPUT_MODES.HTML_ZIP) {
-          zip.file(`${fullName}.html`, item.html);
-          return;
-        }
-
         const txt = buildStructuredText(item.html, item.displayName);
         zip.file(`${fullName}.txt`, txt);
       });
 
       const blob = await zip.generateAsync({ type: "blob" });
       blobUrl = URL.createObjectURL(blob);
-      const zipSuffix =
-        outputMode === OUTPUT_MODES.HTML_ZIP ? "_html.zip" : "_ai_input.zip";
 
       await chrome.downloads.download({
         url: blobUrl,
-        filename: `${baseName}${zipSuffix}`,
+        filename: `${baseName}.zip`,
         saveAs: true,
       });
     }
