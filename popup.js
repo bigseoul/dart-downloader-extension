@@ -286,7 +286,6 @@ async function loadTreeData() {
       singlePageDocParams = response.docParams || null;
       setSinglePageUiMode(true);
       updateOutputModeUI();
-      setLoadingUi(true);
       docMetaPromise = fetchDocMeta(null, []);
       const fullDocumentNode = createSinglePageFullDocumentNode();
       treeData = [fullDocumentNode];
@@ -331,6 +330,7 @@ async function loadTreeData() {
     });
   } catch (e) {
     setLoadingUi(false);
+    document.getElementById("bottomBar").style.display = "none";
     errorDiv.style.display = "block";
     errorDiv.textContent = e.message;
     logPopupTiming("loadTreeData.error", {

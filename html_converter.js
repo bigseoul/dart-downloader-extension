@@ -739,7 +739,7 @@ function _classifySingleColumnTable(table, headers, rows, startIndex) {
   const textLength = lines.reduce((sum, line) => sum + line.length, 0);
   const sectionLikeCount = _countPatternMatches(
     lines,
-    "^(?:\\\\d+\\\\.\\\\d+\\\\s*\\\\S|[가-힣]\\\\.\\\\s+)"
+    "^(?:\\d+\\.\\d+\\s*\\S|[가-힣]\\.\\s+)"
   );
 
   if (textLength > 500) {

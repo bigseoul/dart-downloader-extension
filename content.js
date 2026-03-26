@@ -105,7 +105,6 @@
         if (
           frameDoc &&
           frameDoc.documentElement &&
-          normalizeCharset(frameDoc.characterSet || "") &&
           normalizeTextContent(frameDoc.body?.textContent).length > 20
         ) {
           return frameDoc;
