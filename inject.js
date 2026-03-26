@@ -38,17 +38,23 @@
     };
   }
 
+  function hasSinglePageSignal() {
+    return typeof currentDocValues !== "undefined";
+  }
+
   function postSinglePageOrError(errorMessage) {
-    var docParams = getSinglePageDocParams();
-    if (docParams) {
-      postTreeResult({
-        type: "DART_TREE_DATA",
-        success: true,
-        singlePage: true,
-        data: [],
-        docParams: docParams,
-      });
-      return;
+    if (hasSinglePageSignal()) {
+      var docParams = getSinglePageDocParams();
+      if (docParams) {
+        postTreeResult({
+          type: "DART_TREE_DATA",
+          success: true,
+          singlePage: true,
+          data: [],
+          docParams: docParams,
+        });
+        return;
+      }
     }
 
     postTreeResult({
@@ -61,23 +67,27 @@
   function tryExtract() {
     attempt++;
     try {
-      var docParams = getSinglePageDocParams();
       var listTreeElement = document.getElementById("listTree");
 
-      if (!listTreeElement && docParams) {
-        logInjectTiming("singlePage.fast-path", {
-          elapsedMs: Math.round(performance.now() - startedAt),
-          attempt: attempt,
-          reason: "listTree-missing",
-        });
-        postTreeResult({
-          type: "DART_TREE_DATA",
-          success: true,
-          singlePage: true,
-          data: [],
-          docParams: docParams,
-        });
-        return;
+      // currentDocValues가 페이지에 존재할 때만 단일 페이지로 판단.
+      // URL 파라미터(rcpNo/dcmNo)는 다중 페이지 문서에도 존재하므로 신호로 쓰지 않음.
+      if (!listTreeElement && hasSinglePageSignal()) {
+        var docParams = getSinglePageDocParams();
+        if (docParams) {
+          logInjectTiming("singlePage.fast-path", {
+            elapsedMs: Math.round(performance.now() - startedAt),
+            attempt: attempt,
+            reason: "listTree-missing+currentDocValues",
+          });
+          postTreeResult({
+            type: "DART_TREE_DATA",
+            success: true,
+            singlePage: true,
+            data: [],
+            docParams: docParams,
+          });
+          return;
+        }
       }
 
       if (typeof jQuery === "undefined" || !jQuery("#listTree").jstree) {
@@ -96,20 +106,23 @@
       var tree = jQuery("#listTree").jstree(true);
       var rootNode = tree && tree.get_node ? tree.get_node("#") : null;
       if (!tree || !rootNode || !Array.isArray(rootNode.children) || !rootNode.children.length) {
-        if (docParams && typeof cnt !== "undefined" && Number(cnt) === 0) {
-          logInjectTiming("singlePage.fast-path", {
-            elapsedMs: Math.round(performance.now() - startedAt),
-            attempt: attempt,
-            reason: "empty-toc",
-          });
-          postTreeResult({
-            type: "DART_TREE_DATA",
-            success: true,
-            singlePage: true,
-            data: [],
-            docParams: docParams,
-          });
-          return;
+        if (hasSinglePageSignal() && typeof cnt !== "undefined" && Number(cnt) === 0) {
+          var emptyTocParams = getSinglePageDocParams();
+          if (emptyTocParams) {
+            logInjectTiming("singlePage.fast-path", {
+              elapsedMs: Math.round(performance.now() - startedAt),
+              attempt: attempt,
+              reason: "empty-toc",
+            });
+            postTreeResult({
+              type: "DART_TREE_DATA",
+              success: true,
+              singlePage: true,
+              data: [],
+              docParams: emptyTocParams,
+            });
+            return;
+          }
         }
         if (attempt < maxRetries) {
           logInjectTiming("root.wait", {
