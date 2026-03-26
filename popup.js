@@ -95,10 +95,10 @@ function updateOutputModeUI() {
       helper.textContent = "문서 전체를 한 파일로 저장합니다.";
       label.textContent = "전체 저장";
     } else if (mode === OUTPUT_MODES.AI_MERGED) {
-      helper.textContent = "선택한 내용을 하나의 AI 입력용 텍스트 파일로 저장합니다.";
+      helper.textContent = "선택한 내용을 텍스트 파일 하나로 저장합니다.";
       label.textContent = "합쳐 저장";
     } else {
-      helper.textContent = "선택한 내용을 항목별 AI 입력용 텍스트 파일로 나눠 ZIP에 담아 저장합니다.";
+      helper.textContent = "선택한 내용을 항목별 텍스트 파일로 나눠 ZIP에 저장합니다.";
       label.textContent = "따로 저장";
     }
   }
@@ -262,13 +262,13 @@ async function loadTreeData() {
           action: "getDocMeta",
           firstNode: firstNode
             ? {
-                rcpNo: firstNode.rcpNo,
-                dcmNo: firstNode.dcmNo,
-                eleId: firstNode.eleId,
-                offset: firstNode.offset,
-                length: firstNode.length,
-                dtd: firstNode.dtd,
-              }
+              rcpNo: firstNode.rcpNo,
+              dcmNo: firstNode.dcmNo,
+              eleId: firstNode.eleId,
+              offset: firstNode.offset,
+              length: firstNode.length,
+              dtd: firstNode.dtd,
+            }
             : null,
           docParams: singlePageDocParams,
           reportCandidateNodes,
@@ -278,7 +278,7 @@ async function loadTreeData() {
           docMeta.period = metaResponse.period;
           docMeta.docType = metaResponse.docType;
         }
-      } catch (_) {}
+      } catch (_) { }
     };
 
     let firstNode = response.data[0] || null;
@@ -298,18 +298,18 @@ async function loadTreeData() {
       treeData = response.data;
       const reportCandidateNodes = Array.isArray(treeData)
         ? treeData
-            .filter((node) => node?.rcpNo && node?.dcmNo)
-            .filter((node) => isReportCandidateNode(node))
-            .slice(0, 3)
-            .map((node) => ({
-              rcpNo: node.rcpNo,
-              dcmNo: node.dcmNo,
-              eleId: node.eleId,
-              offset: node.offset,
-              length: node.length,
-              dtd: node.dtd,
-              text: node.text,
-            }))
+          .filter((node) => node?.rcpNo && node?.dcmNo)
+          .filter((node) => isReportCandidateNode(node))
+          .slice(0, 3)
+          .map((node) => ({
+            rcpNo: node.rcpNo,
+            dcmNo: node.dcmNo,
+            eleId: node.eleId,
+            offset: node.offset,
+            length: node.length,
+            dtd: node.dtd,
+            text: node.text,
+          }))
         : [];
       docMetaPromise = fetchDocMeta(firstNode, reportCandidateNodes);
       await docMetaPromise;

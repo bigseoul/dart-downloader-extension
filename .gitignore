@@ -27,3 +27,9 @@ package-lock.json
 # Test / temp files
 icons/test_write.txt
 icons/favicon.png
+
+# dist
+dist/
+
+# powershell script 
+*.ps1
