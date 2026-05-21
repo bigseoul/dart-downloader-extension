@@ -249,6 +249,7 @@
           // 페이지 타이틀에서 회사명 추출 (형식: "삼성전자/사업보고서/2026.03.10")
           const titleParts = document.title.split("/");
           const companyName = titleParts[0] || "";
+          const filingDate = titleParts[2] || "";
 
           // 현재 URL의 dcmNo로 활성 문서 판별
           const urlParams = new URLSearchParams(location.search);
@@ -314,7 +315,7 @@
             }
           }
 
-          sendResponse({ success: true, companyName, period, docType });
+          sendResponse({ success: true, companyName, filingDate, period, docType });
         } catch (e) {
           sendResponse({
             success: false,

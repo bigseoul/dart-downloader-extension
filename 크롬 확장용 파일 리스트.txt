@@ -1,0 +1,22 @@
+브라우저에 “압축해제된 확장 프로그램 로드”로 설치하려면 현재 코드 기준 필수 파일은 이 정도입니다.
+
+```text
+manifest.json
+popup.html
+popup.css
+popup.js
+content.js
+inject.js
+html_converter.js
+section-splitter.js
+lib/jszip.min.js
+icons/icon16.png
+icons/icon48.png
+icons/icon128.png
+```
+
+근거:
+[manifest.json](/mnt/c/Dev/Workspace/dart-downloader-extension-1/manifest.json:16)이 `popup.html`, `content.js`, `inject.js`, 아이콘 3개를 직접 참조하고, [popup.html](/mnt/c/Dev/Workspace/dart-downloader-extension-1/popup.html:97)이 `lib/jszip.min.js`, `html_converter.js`, `section-splitter.js`, `popup.js`를 로드합니다.
+
+필수 아님:
+`docs/`, `temp/`, `.agents/`, `skills-lock.json`, `.codex`, `html_converter_v1.0.1.js`는 설치/실행에는 빼도 됩니다.

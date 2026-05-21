@@ -2,7 +2,7 @@
 
 let treeData = [];
 let selectedNodes = new Map(); // id -> nodeData
-let docMeta = { companyName: "", period: "", docType: "" }; // 기수_회사명_문서유형
+let docMeta = { companyName: "", filingDate: "", period: "", docType: "" }; // 회사명/문서유형/접수일
 let docMetaPromise = null;
 let singlePageDocParams = null;
 let singlePageUiMode = false;
@@ -46,7 +46,7 @@ function sanitizeFilename(value) {
 }
 
 function buildDownloadBaseName() {
-  const prefix = [docMeta.period, docMeta.companyName, docMeta.docType]
+  const prefix = [docMeta.companyName, docMeta.docType, docMeta.filingDate || docMeta.period]
     .filter(Boolean)
     .join("_");
   return sanitizeFilename(prefix) || "dart_documents";
@@ -221,7 +221,7 @@ async function loadTreeData() {
     selectedNodes.clear();
     treeData = [];
     singlePageDocParams = null;
-    docMeta = { companyName: "", period: "", docType: "" };
+    docMeta = { companyName: "", filingDate: "", period: "", docType: "" };
     docMetaPromise = null;
     setSinglePageUiMode(false);
     setLoadingUi(true);
@@ -275,6 +275,7 @@ async function loadTreeData() {
         });
         if (metaResponse?.success) {
           docMeta.companyName = metaResponse.companyName;
+          docMeta.filingDate = metaResponse.filingDate;
           docMeta.period = metaResponse.period;
           docMeta.docType = metaResponse.docType;
         }
