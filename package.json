@@ -1,6 +1,6 @@
 {
   "name": "dart-downloader-extension",
-  "version": "1.0.5",
+  "version": "1.1.0",
   "private": true,
   "description": "DART 다운로더 For AI 크롬 확장 개발용 테스트 설정",
   "scripts": {
