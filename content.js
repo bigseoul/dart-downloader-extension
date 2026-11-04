@@ -11,6 +11,7 @@
     TREE_DATA_UNAVAILABLE: "TREE_DATA_UNAVAILABLE",
     FETCH_FAILURE: "FETCH_FAILURE",
     FETCH_TIMEOUT: "FETCH_TIMEOUT",
+    DOCUMENT_EMPTY: "DOCUMENT_EMPTY",
   };
   const ERROR_MESSAGES = {
     HOST_INVALID: "호스트 비정상: 허용된 DART 호스트가 아닙니다.",
@@ -18,6 +19,7 @@
     TREE_DATA_UNAVAILABLE: "트리 데이터를 가져올 수 없습니다.",
     FETCH_FAILURE: "후속 문서 fetch 실패: 문서를 가져오지 못했습니다.",
     FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다.",
+    DOCUMENT_EMPTY: "빈 문서가 반환되었습니다.",
   };
   const ALLOWED_HOSTS = ["dart.fss.or.kr", "dart1.fss.or.kr", "dart2.fss.or.kr"];
   const CHARSET_ALIASES = {
@@ -91,6 +93,20 @@
     } catch (_) {
       return new TextDecoder("utf-8").decode(bytes);
     }
+  }
+
+  // HTTP 200이어도 본문이 비어 있으면 성공으로 취급하지 않는다.
+  function assertDocumentHasContent(html) {
+    const doc = new DOMParser().parseFromString(html || "", "text/html");
+    doc.querySelectorAll("script, style, noscript").forEach((el) => el.remove());
+    const hasText = normalizeTextContent(doc.body?.textContent).length > 0;
+    const hasTable = Boolean(doc.querySelector("table"));
+    if (!hasText && !hasTable) {
+      const err = new Error(ERROR_MESSAGES.DOCUMENT_EMPTY);
+      err.errorCode = ERROR_CODES.DOCUMENT_EMPTY;
+      throw err;
+    }
+    return html;
   }
 
   function serializeDocument(doc) {
@@ -331,6 +347,7 @@
       const url = buildViewerUrl(request.nodeData);
 
       fetchTextWithTimeout(url)
+        .then(assertDocumentHasContent)
         .then((html) => sendResponse({ success: true, html }))
         .catch((e) =>
           sendResponse({

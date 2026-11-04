@@ -1,0 +1,13 @@
+{
+  "name": "dart-downloader-extension",
+  "version": "1.0.5",
+  "private": true,
+  "description": "DART 다운로더 For AI 크롬 확장 개발용 테스트 설정",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "package": "node scripts/package.js"
+  },
+  "devDependencies": {
+    "jsdom": "^24.1.3"
+  }
+}

@@ -18,6 +18,8 @@ const POPUP_ERROR_MESSAGES = {
   TREE_DATA_UNAVAILABLE: "문서 목차를 읽지 못했습니다. 페이지를 새로고침한 뒤 다시 시도해주세요.",
   FETCH_FAILURE: "문서를 가져오지 못했습니다. 네트워크 상태를 확인해주세요.",
   FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.",
+  DOCUMENT_EMPTY: "DART가 빈 문서를 반환했습니다. 잠시 후 다시 시도해주세요.",
+  CONVERT_FAILURE: "문서를 텍스트로 변환하지 못했습니다.",
 };
 
 function logPopupTiming(step, detail) {
@@ -70,8 +72,7 @@ function buildMergedStructuredText(items, outputFileName) {
   const blocks = [`DOCUMENT: ${outputFileName}`, `ITEM_COUNT: ${items.length}`, ""];
 
   items.forEach((item, index) => {
-    const structuredText = buildStructuredText(item.html, item.displayName);
-    const body = stripStructuredDocumentHeader(structuredText);
+    const body = stripStructuredDocumentHeader(item.structuredText);
 
     blocks.push(`===== ${item.displayName} =====`);
     if (body) {
@@ -636,13 +637,20 @@ async function downloadSelected() {
 
       if (html && (!response || response.success)) {
         const displayName = (node.text || "").replace(/\s+/g, " ").trim() || "untitled";
+        let structuredText;
+        try {
+          structuredText = buildStructuredText(html, displayName);
+        } catch (convertError) {
+          convertError.errorCode = "CONVERT_FAILURE";
+          throw convertError;
+        }
         let safeName = sanitizeFilename(displayName) || "untitled";
         const count = usedNames.get(safeName) || 0;
         usedNames.set(safeName, count + 1);
         if (count > 0) {
           safeName = `${safeName} (${count + 1})`;
         }
-        successfulItems.push({ displayName, safeName, html });
+        successfulItems.push({ displayName, safeName, structuredText });
       } else {
         console.warn(`Failed response for: ${node.text}`, resolveErrorMessage(response));
         failedItems.push({
@@ -652,7 +660,7 @@ async function downloadSelected() {
         });
       }
     } catch (e) {
-      console.error(`Failed to fetch: ${node.text}`, e);
+      console.error(`Failed to process: ${node.text}`, e);
       failedItems.push({
         name: node.text,
         errorCode: e.errorCode || "UNKNOWN",
@@ -706,8 +714,7 @@ async function downloadSelected() {
 
       successfulItems.forEach((item) => {
         const fullName = `${baseName}_${item.safeName}`;
-        const txt = buildStructuredText(item.html, item.displayName);
-        zip.file(`${fullName}.txt`, txt);
+        zip.file(`${fullName}.txt`, item.structuredText);
       });
 
       const blob = await zip.generateAsync({ type: "blob" });
