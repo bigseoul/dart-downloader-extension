@@ -161,6 +161,12 @@ function _isTextCoveredBy(compactOutput, compactCell) {
   if (compactCell.length < MIN_TEXT_PROBE_LENGTH || !/[^\d,.\-()%]/.test(compactCell)) {
     return true;
   }
+  // "구분(*)" 같은 일반 열 이름은 "계정과목(*)" 으로 바뀌어 나간다(각주 표시는 유지).
+  const footnoteMarker = (compactCell.match(FOOTNOTE_MARKER_PATTERN) || [""])[0];
+  const coreLabel = compactCell.slice(0, compactCell.length - footnoteMarker.length);
+  if (GENERIC_ACCOUNT_LABELS.includes(coreLabel) && compactOutput.includes(`계정과목${footnoteMarker}`)) {
+    return true;
+  }
   return (
     compactOutput.includes(compactCell.slice(0, TEXT_PROBE_LENGTH)) &&
     compactOutput.includes(compactCell.slice(-TEXT_PROBE_LENGTH))
@@ -541,6 +547,8 @@ function _hasNumericValueCell(row) {
 }
 
 const MAX_ACCOUNT_LABEL_LENGTH = 20;
+const GENERIC_ACCOUNT_LABELS = ["구분", "과목", "계정과목"];
+const FOOTNOTE_MARKER_PATTERN = /\s*(?:\(\*\d*\)|\(주\d*\)|\*\d*)$/;
 
 function _normalizeFirstHeaderLabel(headers) {
   if (!headers.length) {
@@ -557,11 +565,14 @@ function _normalizeFirstHeaderLabel(headers) {
     .slice(1)
     .some((header) => header.trim() && !header.startsWith("col"));
 
-  if (
-    firstHeader.includes("과목") ||
-    firstHeader.includes("구분") ||
-    (normalizedHeaders[0].startsWith("col") && hasDescriptiveFollowingHeader)
-  ) {
+  // "(단위 : 백만원) / 구분(*1)" 처럼 마지막 칸이 일반 명칭일 때만 바꾸고, 각주 표시는 남긴다.
+  // "특수관계 구분" 같은 고유 명칭은 그대로 둔다.
+  const lastPart = _headerParts(firstHeader).at(-1) || firstHeader;
+  const footnoteMarker = (lastPart.match(FOOTNOTE_MARKER_PATTERN) || [""])[0];
+  const coreLabel = lastPart.slice(0, lastPart.length - footnoteMarker.length).trim();
+  if (GENERIC_ACCOUNT_LABELS.includes(coreLabel)) {
+    normalizedHeaders[0] = `계정과목${footnoteMarker}`;
+  } else if (normalizedHeaders[0].startsWith("col") && hasDescriptiveFollowingHeader) {
     normalizedHeaders[0] = "계정과목";
   }
 
@@ -1133,6 +1144,16 @@ function _structuredLinesFromTable(node, currentHeading = "") {
       startIndex
     );
     if (singleColumnKind === "prose") {
+      // 헤더 칸(예: "목 적 사 업")은 본문 셀에 포함되지 않으므로 제목으로 남긴다.
+      const proseTitle = (rawCollapsedHeaders[0] || "").trim();
+      if (
+        startIndex > 0 &&
+        proseTitle &&
+        !/^col\d+$/.test(proseTitle) &&
+        !proseLines.join(" ").includes(proseTitle)
+      ) {
+        outputLines.push(`META: ${proseTitle}`);
+      }
       outputLines.push(..._formatProseLines(proseLines));
       return outputLines;
     }

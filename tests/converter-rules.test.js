@@ -162,3 +162,30 @@ test("열이 많아 GROUP 으로 나눌 때 공통 윗단 헤더를 META 로 남
   assert.ok(lines.includes("GROUP: 취득원가"));
   assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
 });
+
+test("'구분(*1)' 처럼 각주가 붙은 열 이름은 각주를 남긴 채 '계정과목' 으로 맞춘다", () => {
+  // 한국스탠다드차타드은행 2025 사업보고서 III. 재무에 관한 사항에서 실제로 나온 형태
+  const { convert } = loadConverter();
+  const lines = convert(
+    "<table><tr><th>구분(*1)</th><th>당기말</th></tr><tr><td>원화예치금</td><td>1,000</td></tr></table>"
+  );
+  assert.ok(lines.includes("ROW: 계정과목(*1)=원화예치금 | 당기말=1,000"));
+  assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
+});
+
+test("'특수관계 구분' 같은 고유 열 이름은 그대로 둔다", () => {
+  const { convert } = loadConverter();
+  const lines = convert(
+    "<table><tr><th>특수관계 구분</th><th>당기</th></tr><tr><td>지배기업</td><td>1,000</td></tr></table>"
+  );
+  assert.ok(lines.includes("ROW: 특수관계 구분=지배기업 | 당기=1,000"));
+});
+
+test("한 열짜리 긴 목록 표는 헤더 칸을 제목으로 남긴다", () => {
+  // 한국스탠다드차타드은행 I. 회사의 개요 '목 적 사 업' 표
+  const { convert } = loadConverter();
+  const items = Array.from({ length: 25 }, (_, index) => `${index + 1}. 업무 항목 설명 ${index + 1}`).join("<br>");
+  const lines = convert(`<table><tr><th>목 적 사 업</th></tr><tr><td>${items}</td></tr></table>`);
+  assert.ok(lines.includes("META: 목 적 사 업"), lines.join("\n"));
+  assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
+});
