@@ -492,6 +492,8 @@ function _hasNumericValueCell(row) {
   return row.slice(1).some((cell) => NUMERIC_VALUE_PATTERN.test(cell.trim()));
 }
 
+const MAX_ACCOUNT_LABEL_LENGTH = 20;
+
 function _normalizeFirstHeaderLabel(headers) {
   if (!headers.length) {
     return headers;
@@ -499,6 +501,10 @@ function _normalizeFirstHeaderLabel(headers) {
 
   const normalizedHeaders = [...headers];
   const firstHeader = normalizedHeaders[0].trim() || "계정과목";
+  // "구 분"·"과목" 같은 짧은 열 이름만 바꾼다. 문장 속 단어(예: "…구분이 없어졌습니다")는 바꾸지 않는다.
+  if (firstHeader.replace(/\s+/g, "").length > MAX_ACCOUNT_LABEL_LENGTH) {
+    return normalizedHeaders;
+  }
   const hasDescriptiveFollowingHeader = normalizedHeaders
     .slice(1)
     .some((header) => header.trim() && !header.startsWith("col"));
@@ -1033,11 +1039,11 @@ function _structuredLinesFromTable(node, currentHeading = "") {
     headers = _mergeStubHeaders(headers);
   }
 
-  let [collapsedHeaders] = _collapseAdjacentHeaderGroups(
+  const [rawCollapsedHeaders] = _collapseAdjacentHeaderGroups(
     headers,
     new Array(headers.length).fill("")
   );
-  collapsedHeaders = _normalizeFirstHeaderLabel(collapsedHeaders);
+  const collapsedHeaders = _normalizeFirstHeaderLabel(rawCollapsedHeaders);
 
   if (collapsedHeaders.length === 1) {
     const [singleColumnKind, proseLines] = _classifySingleColumnTable(
@@ -1052,8 +1058,9 @@ function _structuredLinesFromTable(node, currentHeading = "") {
     }
   }
 
+  // 데이터 행이 없으면 헤더 칸이 곧 내용이다. 열 이름 정규화를 거치지 않은 원문을 그대로 남긴다.
   if (!dataRows.length) {
-    outputLines.push(..._metaLinesFromHeaders(collapsedHeaders));
+    outputLines.push(..._metaLinesFromHeaders(rawCollapsedHeaders));
     return outputLines;
   }
 

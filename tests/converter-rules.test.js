@@ -48,6 +48,26 @@ test("단위·기준일 같은 진짜 메타 표는 그대로 META 로 남는다
   );
 });
 
+test("'구분' 이 들어 있는 주석 한 칸 표는 본문이 '계정과목' 으로 바뀌지 않는다", () => {
+  // 삼성전자 2025 사업보고서 VI. 주식사무 아래 주석 표에서 실제로 생긴 문제
+  const { convert } = loadConverter();
+  const lines = convert(
+    '<table class="nb"><tr><td>※ 2019년 9월 16일 전자증권법 시행으로<br>\'주권의 종류\' 구분이 없어졌습니다.<br>※ 당사는 중앙일보에 공고합니다.</td></tr></table>'
+  );
+  const meta = lines.find((line) => line.startsWith("META:"));
+  assert.match(meta, /2019년 9월 16일/);
+  assert.match(meta, /구분이 없어졌습니다/);
+  assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
+});
+
+test("짧은 '구분' 열 이름은 기존대로 '계정과목' 으로 맞춘다", () => {
+  const { convert } = loadConverter();
+  const lines = convert(
+    "<table><tr><th>구분</th><th>당기</th></tr><tr><td>매출채권</td><td>1,234</td></tr></table>"
+  );
+  assert.ok(lines.includes("ROW: 계정과목=매출채권 | 당기=1,234"));
+});
+
 test("변환 결과에서 원문 숫자가 빠지면 WARN 줄을 남긴다", () => {
   const { convert, run } = loadConverter();
   // 마지막 ROW 를 버리는 결함을 주입한다.
