@@ -60,9 +60,15 @@ function buildStructuredText(htmlText, sourceName) {
       }
       seenTables.add(node);
 
-      const tableBlock = _classifyTableBlock(
-        _structuredLinesFromTable(node, currentHeading)
-      );
+      const tableLines = _structuredLinesFromTable(node, currentHeading);
+      const warning = _numericCoverageWarning(node, tableLines);
+      if (warning) {
+        if (!tableLines.length) {
+          tableLines.push(`TABLE: ${_tableCaption(node, currentHeading)}`);
+        }
+        tableLines.push(warning);
+      }
+      const tableBlock = _classifyTableBlock(tableLines);
       if (tableBlock.kind === "empty") {
         continue;
       }
@@ -124,6 +130,39 @@ function buildStructuredText(htmlText, sourceName) {
   }
 
   return `${compactLines.join("\n").trim()}\n`;
+}
+
+// 변환 결과를 원문 표와 대조한다: 원문 셀(중첩 표 제외)의 숫자 값이 출력에 빠졌으면 WARN 을 남긴다.
+const NUMERIC_TOKEN_PATTERN = /\d[\d,]*(?:\.\d+)?/g;
+const MAX_WARN_SAMPLES = 5;
+
+function _numericTokens(text) {
+  return text.match(NUMERIC_TOKEN_PATTERN) || [];
+}
+
+function _numericCoverageWarning(table, lines) {
+  const sourceTokens = new Set();
+  for (const cell of table.querySelectorAll("th, td")) {
+    if (cell.closest("table") !== table) {
+      continue;
+    }
+    for (const token of _numericTokens(_cellText(cell))) {
+      sourceTokens.add(token);
+    }
+  }
+  if (!sourceTokens.size) {
+    return "";
+  }
+
+  const outputTokens = new Set(_numericTokens(lines.join("\n")));
+  const missing = [...sourceTokens].filter((token) => !outputTokens.has(token));
+  if (!missing.length) {
+    return "";
+  }
+
+  const samples = missing.slice(0, MAX_WARN_SAMPLES).join(", ");
+  const overflow = missing.length > MAX_WARN_SAMPLES ? ` 외 ${missing.length - MAX_WARN_SAMPLES}개` : "";
+  return `WARN: 원문 표의 숫자 ${sourceTokens.size}종 중 ${missing.length}종이 변환 결과에 없습니다: ${samples}${overflow}`;
 }
 
 function _stripComments(doc) {
@@ -431,7 +470,26 @@ function _headerLabels(table, gridRows) {
     return [_mergeHeaderRows(headerRows), headerRowCount];
   }
 
+  // TD 로 작성된 헤더: 첫 행에는 숫자가 없고 다음 행부터 숫자 값이 나오면 첫 행을 헤더로 쓴다.
+  const [firstRow, ...restRows] = gridRows.map(({ row }) => row);
+  const firstRowCells = firstRow.filter((cell) => cell.trim());
+  if (
+    firstRow.length > 1 &&
+    firstRowCells.length === firstRow.length &&
+    new Set(firstRowCells).size === firstRowCells.length &&
+    !_hasNumericValueCell(firstRow) &&
+    restRows.some(_hasNumericValueCell)
+  ) {
+    return [_mergeHeaderRows([firstRow]), 1];
+  }
+
   return [gridRows[0].row.map((_, index) => `col${index + 1}`), 0];
+}
+
+const NUMERIC_VALUE_PATTERN = /^[(\-−△]?\s*[\d,]+(?:\.\d+)?\s*\)?\s*%?$/;
+
+function _hasNumericValueCell(row) {
+  return row.slice(1).some((cell) => NUMERIC_VALUE_PATTERN.test(cell.trim()));
 }
 
 function _normalizeFirstHeaderLabel(headers) {
@@ -641,6 +699,11 @@ function _isMetadataTable(headers, rows) {
   }
 
   if (!headers.every((header) => header.startsWith("col"))) {
+    return false;
+  }
+
+  // 금액·비율 같은 숫자 값이 있는 다열 표는 메타가 아니라 데이터다.
+  if (headers.length > 1 && rows.some(_hasNumericValueCell)) {
     return false;
   }
 

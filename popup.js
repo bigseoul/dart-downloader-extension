@@ -58,6 +58,36 @@ function stripStructuredDocumentHeader(text) {
   return (text || "").replace(/^DOCUMENT:[^\n]*\n+/, "").trim();
 }
 
+// 변환 결과에 원문 위치를 남겨, AI 답변의 숫자를 DART 원문에서 다시 찾을 수 있게 한다.
+function buildSourceUrl(tabUrl, node) {
+  if (!node?.rcpNo || !node?.dcmNo) {
+    return tabUrl || "";
+  }
+  const query = new URLSearchParams({
+    rcpNo: node.rcpNo,
+    dcmNo: node.dcmNo,
+    eleId: node.eleId || "0",
+    offset: node.offset || "0",
+    length: node.length || "0",
+    dtd: node.dtd || "HTML",
+  });
+  return `${new URL(tabUrl).origin}/report/viewer.do?${query.toString()}`;
+}
+
+function withSourceLine(structuredText, sourceUrl) {
+  if (!sourceUrl) {
+    return structuredText;
+  }
+  return structuredText.replace(/^(DOCUMENT:[^\n]*\n)/, `$1SOURCE: ${sourceUrl}\n`);
+}
+
+function countWarnings(items) {
+  return items.reduce(
+    (sum, item) => sum + (item.structuredText.match(/^WARN:/gm) || []).length,
+    0
+  );
+}
+
 function createSinglePageFullDocumentNode(html = "") {
   return {
     id: "sp-full-document",
@@ -639,7 +669,10 @@ async function downloadSelected() {
         const displayName = (node.text || "").replace(/\s+/g, " ").trim() || "untitled";
         let structuredText;
         try {
-          structuredText = buildStructuredText(html, displayName);
+          structuredText = withSourceLine(
+            buildStructuredText(html, displayName),
+            buildSourceUrl(tab.url, node)
+          );
         } catch (convertError) {
           convertError.errorCode = "CONVERT_FAILURE";
           throw convertError;
@@ -731,6 +764,12 @@ async function downloadSelected() {
       mode: outputMode,
       itemCount: successfulItems.length,
     });
+    const warningCount = countWarnings(successfulItems);
+    if (warningCount > 0) {
+      alert(
+        `저장했지만 표 ${warningCount}개에서 원문 숫자가 변환 결과에 빠졌습니다.\n파일의 "WARN:" 줄과 SOURCE 원문을 확인해주세요.`
+      );
+    }
   } catch (e) {
     console.error("다운로드 파일 생성 실패:", e);
     alert("다운로드에 실패했습니다: " + e.message);

@@ -70,6 +70,36 @@ test("한 항목 변환이 실패해도 나머지는 합쳐 저장된다", async
   assert.equal(dialogs.some((d) => d.type === "alert"), false);
 });
 
+test("저장 파일의 각 섹션에 DART 원문 SOURCE 주소가 붙는다", async () => {
+  const popup = await loadPopup({ fetchHtml: fetchByEleId });
+  selectNodes(popup, makeNodes().filter((node) => node.id !== "broken"));
+
+  await popup.run("downloadSelected()");
+
+  const text = await readBlobText(popup.window, popup.downloads[0].blob);
+  assert.match(
+    text,
+    /===== good-a =====\nSOURCE: https:\/\/dart\.fss\.or\.kr\/report\/viewer\.do\?rcpNo=1&dcmNo=1&eleId=good-a&offset=0&length=0&dtd=HTML\n/
+  );
+  assert.match(text, /===== good-b =====\nSOURCE: .*eleId=good-b/);
+});
+
+test("원문 숫자 누락 경고가 있으면 저장 후 사용자에게 알린다", async () => {
+  const popup = await loadPopup({ fetchHtml: fetchByEleId });
+  popup.run(`
+    const __origConvert = buildStructuredText;
+    buildStructuredText = (html, name) => __origConvert(html, name) + "WARN: 테스트 경고\\n";
+  `);
+  selectNodes(popup, makeNodes().filter((node) => node.id !== "broken"));
+
+  await popup.run("downloadSelected()");
+
+  assert.equal(popup.downloads.length, 1);
+  const alertDialog = popup.dialogs.find((d) => d.type === "alert");
+  assert.ok(alertDialog);
+  assert.match(alertDialog.message, /표 2개에서 원문 숫자가/);
+});
+
 test("빈 본문 응답은 DOCUMENT_EMPTY 실패로 돌려준다", async () => {
   const { send } = loadContent({
     fetchResponse: () =>
