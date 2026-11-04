@@ -7,6 +7,8 @@
   const SINGLE_PAGE_FETCH_TIMEOUT_MS = 30000;
   // DART 는 짧은 시간에 요청이 몰리면 IP 를 한동안 차단한다. 모든 viewer 요청 시작 간격을 이 값 이상으로 둔다.
   const MIN_REQUEST_INTERVAL_MS = 500;
+  // 원문이 큰 섹션(예: 삼성전자 III. 재무에 관한 사항 약 4.6MB)은 느린 회선에서 15초를 넘길 수 있다.
+  const LARGE_SECTION_BYTES = 1000000;
   let nextRequestAt = 0;
   const ERROR_CODES = {
     HOST_INVALID: "HOST_INVALID",
@@ -380,8 +382,12 @@
 
     if (request.action === "fetchNodeHTML") {
       const url = buildViewerUrl(request.nodeData);
+      const timeoutMs =
+        Number(request.nodeData?.length) > LARGE_SECTION_BYTES
+          ? SINGLE_PAGE_FETCH_TIMEOUT_MS
+          : FETCH_TIMEOUT_MS;
 
-      fetchTextWithTimeout(url)
+      fetchTextWithTimeout(url, {}, timeoutMs)
         .then(assertDocumentHasContent)
         .then((html) => sendResponse({ success: true, html }))
         .catch((e) =>

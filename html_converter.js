@@ -61,7 +61,7 @@ function buildStructuredText(htmlText, sourceName) {
       seenTables.add(node);
 
       const tableLines = _structuredLinesFromTable(node, currentHeading);
-      const warning = _numericCoverageWarning(node, tableLines);
+      const warning = _coverageWarning(node, tableLines);
       if (warning) {
         if (!tableLines.length) {
           tableLines.push(`TABLE: ${_tableCaption(node, currentHeading)}`);
@@ -132,37 +132,79 @@ function buildStructuredText(htmlText, sourceName) {
   return `${compactLines.join("\n").trim()}\n`;
 }
 
-// 변환 결과를 원문 표와 대조한다: 원문 셀(중첩 표 제외)의 숫자 값이 출력에 빠졌으면 WARN 을 남긴다.
+// 변환 결과를 원문 표와 대조한다(중첩 표는 따로 대조). 빠진 내용이 있으면 WARN 을 남긴다.
+// - 숫자: 원문에 나온 횟수만큼 출력에도 있어야 한다(같은 숫자가 두 칸에 있다가 하나만 사라진 경우도 잡는다).
+// - 글자: 4자 이상인 셀은 앞뒤 일부가 출력에 있어야 한다(숫자 없는 문장이 사라진 경우를 잡는다).
 const NUMERIC_TOKEN_PATTERN = /\d[\d,]*(?:\.\d+)?/g;
 const MAX_WARN_SAMPLES = 5;
+const MIN_TEXT_PROBE_LENGTH = 4;
+const TEXT_PROBE_LENGTH = 12;
+const TEXT_SAMPLE_LENGTH = 30;
 
 function _numericTokens(text) {
   return text.match(NUMERIC_TOKEN_PATTERN) || [];
 }
 
-function _numericCoverageWarning(table, lines) {
-  const sourceTokens = new Set();
-  for (const cell of table.querySelectorAll("th, td")) {
-    if (cell.closest("table") !== table) {
-      continue;
-    }
-    for (const token of _numericTokens(_cellText(cell))) {
-      sourceTokens.add(token);
-    }
+function _countTokens(tokens) {
+  const counts = new Map();
+  for (const token of tokens) {
+    counts.set(token, (counts.get(token) || 0) + 1);
   }
-  if (!sourceTokens.size) {
+  return counts;
+}
+
+function _compact(text) {
+  return text.replace(/\s+/g, "");
+}
+
+function _isTextCoveredBy(compactOutput, compactCell) {
+  if (compactCell.length < MIN_TEXT_PROBE_LENGTH || !/[^\d,.\-()%]/.test(compactCell)) {
+    return true;
+  }
+  return (
+    compactOutput.includes(compactCell.slice(0, TEXT_PROBE_LENGTH)) &&
+    compactOutput.includes(compactCell.slice(-TEXT_PROBE_LENGTH))
+  );
+}
+
+function _formatWarnSamples(items) {
+  const samples = items.slice(0, MAX_WARN_SAMPLES).join(", ");
+  const overflow = items.length > MAX_WARN_SAMPLES ? ` 외 ${items.length - MAX_WARN_SAMPLES}개` : "";
+  return `${samples}${overflow}`;
+}
+
+function _coverageWarning(table, lines) {
+  const cellTexts = Array.from(table.querySelectorAll("th, td"))
+    .filter((cell) => cell.closest("table") === table)
+    .map((cell) => _cellText(cell))
+    .filter(Boolean);
+  if (!cellTexts.length) {
     return "";
   }
 
-  const outputTokens = new Set(_numericTokens(lines.join("\n")));
-  const missing = [...sourceTokens].filter((token) => !outputTokens.has(token));
-  if (!missing.length) {
-    return "";
+  const output = lines.join("\n");
+  const outputCounts = _countTokens(_numericTokens(output));
+  const missingNumbers = [];
+  for (const [token, count] of _countTokens(cellTexts.flatMap(_numericTokens))) {
+    const shortfall = count - (outputCounts.get(token) || 0);
+    if (shortfall > 0) {
+      missingNumbers.push(shortfall > 1 ? `${token}(${shortfall}회)` : token);
+    }
   }
 
-  const samples = missing.slice(0, MAX_WARN_SAMPLES).join(", ");
-  const overflow = missing.length > MAX_WARN_SAMPLES ? ` 외 ${missing.length - MAX_WARN_SAMPLES}개` : "";
-  return `WARN: 원문 표의 숫자 ${sourceTokens.size}종 중 ${missing.length}종이 변환 결과에 없습니다: ${samples}${overflow}`;
+  const compactOutput = _compact(output);
+  const missingTexts = cellTexts
+    .filter((text) => !_isTextCoveredBy(compactOutput, _compact(text)))
+    .map((text) => `"${text.length > TEXT_SAMPLE_LENGTH ? `${text.slice(0, TEXT_SAMPLE_LENGTH)}…` : text}"`);
+
+  const problems = [];
+  if (missingNumbers.length) {
+    problems.push(`숫자 ${missingNumbers.length}종 누락: ${_formatWarnSamples(missingNumbers)}`);
+  }
+  if (missingTexts.length) {
+    problems.push(`셀 ${missingTexts.length}개 누락: ${_formatWarnSamples(missingTexts)}`);
+  }
+  return problems.length ? `WARN: 원문 표 내용이 변환 결과에 빠졌습니다. ${problems.join(" / ")}` : "";
 }
 
 function _stripComments(doc) {
@@ -326,17 +368,20 @@ function _buildTableGrid(table) {
     }
 
     const row = [];
+    // 칸마다 원문 셀의 첫 칸인지 기록한다. colspan 으로 복제된 칸과 같은 값의 별도 셀을 구분하는 데 쓴다.
+    const spanStarts = [];
     let colIndex = 0;
 
     const flushCarriedCells = () => {
       while (carry.has(colIndex)) {
         const carried = carry.get(colIndex);
         row.push(carried.value);
+        spanStarts.push(carried.isSpanStart);
         if (carried.remaining <= 1) {
           carry.delete(colIndex);
         } else {
           carry.set(colIndex, {
-            value: carried.value,
+            ...carried,
             remaining: carried.remaining - 1,
           });
         }
@@ -353,9 +398,11 @@ function _buildTableGrid(table) {
 
       for (let offset = 0; offset < colspan; offset += 1) {
         row.push(text);
+        spanStarts.push(offset === 0);
         if (rowspan > 1) {
           carry.set(colIndex + offset, {
             value: text,
+            isSpanStart: offset === 0,
             remaining: rowspan - 1,
           });
         }
@@ -366,6 +413,7 @@ function _buildTableGrid(table) {
     flushCarriedCells();
 
     if (row.some((value) => value.trim())) {
+      row.spanStarts = spanStarts;
       const isHeader = cells.length > 0 && cells.every((cell) => cell.tagName === "TH");
       gridRows.push({ row, isHeader });
     }
@@ -625,6 +673,30 @@ function _groupedLeafHeaderLabels(headers, groupName) {
   return _normalizeFirstHeaderLabel(leafHeaders);
 }
 
+// GROUP/HEADER_RAW 로 나누면 모든 열에 공통인 윗단 헤더(예: "공정가치로 측정하는 금융자산 / 상장주식")와
+// 그룹과 마지막 칸 사이의 중간 헤더가 출력에서 빠진다. 빠진 헤더를 처음 나온 순서대로 돌려준다.
+function _droppedHeaderParts(headers, groupedHeaders) {
+  const shown = new Set();
+  for (const [groupName, , rawHeaders] of groupedHeaders) {
+    if (groupName) {
+      shown.add(groupName);
+    }
+    for (const label of rawHeaders) {
+      _headerParts(label).forEach((part) => shown.add(part));
+    }
+  }
+
+  const dropped = [];
+  for (const header of headers.slice(1)) {
+    for (const part of _headerParts(header)) {
+      if (!shown.has(part) && !dropped.includes(part) && !/^col\d+$/.test(part)) {
+        dropped.push(part);
+      }
+    }
+  }
+  return dropped;
+}
+
 function _shouldUseRawTableFallback(headers) {
   return headers.length > 18;
 }
@@ -683,10 +755,18 @@ function _collapseAdjacentHeaderGroups(headers, row) {
       nextIndex += 1;
     }
 
+    // 같은 열 이름이 이어지면 값을 합친다. colspan 으로 복제된 칸만 버리고, 별도 셀은 값이 같아도 모두 남긴다
+    // (예: 은행차입금 두 건의 이자율이 둘 다 0.026 인 경우).
     const values = [];
-    for (const value of row.slice(index, nextIndex)) {
-      const normalized = value.trim();
-      if (normalized && !values.includes(normalized)) {
+    for (let column = index; column < nextIndex; column += 1) {
+      const normalized = (row[column] || "").trim();
+      if (!normalized) {
+        continue;
+      }
+      const isSeparateCell = row.spanStarts
+        ? column === index || row.spanStarts[column]
+        : !values.includes(normalized);
+      if (isSeparateCell) {
         values.push(normalized);
       }
     }
@@ -1083,10 +1163,17 @@ function _structuredLinesFromTable(node, currentHeading = "") {
     const collapsedRows = dataRows.map((row) =>
       _normalizeSummaryRow(_collapseAdjacentHeaderGroups(headers, row)[1])
     );
+    const groupedHeaders = groups.map(([groupName, indexes]) => [
+      groupName,
+      indexes,
+      _groupedLeafHeaderLabels(_selectColumns(collapsedHeaders, indexes), groupName),
+    ]);
+    const droppedHeaderParts = _droppedHeaderParts(collapsedHeaders, groupedHeaders);
+    if (droppedHeaderParts.length) {
+      outputLines.push(`META: ${droppedHeaderParts.join(" / ")}`);
+    }
 
-    for (const [groupName, indexes] of groups) {
-      const selectedHeaders = _selectColumns(collapsedHeaders, indexes);
-      const rawHeaders = _groupedLeafHeaderLabels(selectedHeaders, groupName);
+    for (const [groupName, indexes, rawHeaders] of groupedHeaders) {
       if (groupName) {
         outputLines.push(`GROUP: ${groupName}`);
       }

@@ -84,7 +84,7 @@ test("저장 파일의 각 섹션에 DART 원문 SOURCE 주소가 붙는다", as
   assert.match(text, /===== good-b =====\nSOURCE: .*eleId=good-b/);
 });
 
-test("원문 숫자 누락 경고가 있으면 저장 후 사용자에게 알린다", async () => {
+test("원문 내용 누락 경고가 있으면 저장 후 사용자에게 알린다", async () => {
   const popup = await loadPopup({ fetchHtml: fetchByEleId });
   popup.run(`
     const __origConvert = buildStructuredText;
@@ -97,7 +97,7 @@ test("원문 숫자 누락 경고가 있으면 저장 후 사용자에게 알린
   assert.equal(popup.downloads.length, 1);
   const alertDialog = popup.dialogs.find((d) => d.type === "alert");
   assert.ok(alertDialog);
-  assert.match(alertDialog.message, /표 2개에서 원문 숫자가/);
+  assert.match(alertDialog.message, /표 2개에서 원문 내용이/);
 });
 
 test("빈 본문 응답은 DOCUMENT_EMPTY 실패로 돌려준다", async () => {

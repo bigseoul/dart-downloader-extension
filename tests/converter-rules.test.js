@@ -1,4 +1,4 @@
-// tests/converter-rules.test.js - 열 붕괴 방지와 원문 숫자 대조 검증 규칙을 확인한다.
+// tests/converter-rules.test.js - 열 붕괴 방지와 원문 대조 검증 규칙을 확인한다.
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const { JSDOM } = require("jsdom");
@@ -91,5 +91,74 @@ test("변환이 원문 숫자를 모두 담으면 WARN 이 없다", () => {
     "<table><tr><th>구분</th><th>당기</th><th>전기</th></tr>" +
       "<tr><td>매출채권</td><td>1,234</td><td>1,234</td></tr></table>"
   );
+  assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
+});
+
+test("숫자 없는 셀 문장이 빠져도 WARN 이 남는다", () => {
+  const { convert, run } = loadConverter();
+  run(`
+    const __origText = _structuredLinesFromTable;
+    _structuredLinesFromTable = (node, heading) =>
+      __origText(node, heading).map((line) => line.replace("구분이 없어졌습니다", ""));
+  `);
+  const lines = convert(
+    "<table><tr><th>구분</th><th>내용</th></tr><tr><td>주권</td><td>주권의 종류 구분이 없어졌습니다</td></tr></table>"
+  );
+  assert.match(lines.find((line) => line.startsWith("WARN:")), /셀 1개 누락: "주권의 종류 구분이 없어졌습니다"/);
+});
+
+test("같은 숫자가 두 칸에 있다가 하나만 빠져도 WARN 이 남는다", () => {
+  const { convert, run } = loadConverter();
+  run(`
+    const __origDup = _structuredLinesFromTable;
+    _structuredLinesFromTable = (node, heading) =>
+      __origDup(node, heading).map((line) => line.replace(" | 전기=1,234", ""));
+  `);
+  const lines = convert(
+    "<table><tr><th>구분</th><th>당기</th><th>전기</th></tr><tr><td>매출채권</td><td>1,234</td><td>1,234</td></tr></table>"
+  );
+  assert.match(lines.find((line) => line.startsWith("WARN:")), /숫자 1종 누락: 1,234/);
+});
+
+test("열 이름이 같은 별도 칸은 값이 같아도 모두 남는다", () => {
+  // 삼성전자 별도 주석 차입금 표: 한국산업은행 차입금 두 건의 이자율이 모두 0.026
+  const { convert } = loadConverter();
+  const lines = convert(
+    "<table><tr><th>구분</th><th>은행차입금</th><th>은행차입금</th></tr>" +
+      "<tr><td>연이자율</td><td>0.026</td><td>0.026</td></tr>" +
+      "<tr><td>장기차입금</td><td>2,000,000</td><td>800,000</td></tr></table>"
+  );
+  assert.ok(lines.includes("ROW: 계정과목=연이자율 | 은행차입금=0.026 / 0.026"));
+  assert.ok(lines.includes("ROW: 계정과목=장기차입금 | 은행차입금=2,000,000 / 800,000"));
+  assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
+});
+
+test("colspan 으로 여러 칸을 덮은 값은 기존대로 한 번만 쓰고, 다른 열에는 그대로 남는다", () => {
+  const { convert } = loadConverter();
+  const merged = convert(
+    '<table><tr><th>구분</th><th>은행차입금</th><th>은행차입금</th></tr><tr><td>만기일</td><td colspan="2">2030.12.10</td></tr></table>'
+  );
+  assert.ok(merged.includes("ROW: 계정과목=만기일 | 은행차입금=2030.12.10"));
+  const spread = convert(
+    '<table><tr><th>구분</th><th>당기</th><th>전기</th></tr><tr><td>차입금</td><td colspan="2">해당사항 없음</td></tr></table>'
+  );
+  assert.ok(spread.includes("ROW: 계정과목=차입금 | 당기=해당사항 없음 | 전기=해당사항 없음"));
+});
+
+test("열이 많아 GROUP 으로 나눌 때 공통 윗단 헤더를 META 로 남긴다", () => {
+  const { convert } = loadConverter();
+  const companies = Array.from({ length: 10 }, (_, index) => `회사${index + 1}`);
+  const header = (group) => companies.map((name) => `<th>${name}</th>`).join("");
+  const values = Array.from({ length: 20 }, (_, index) => `<td>${(index + 1) * 1000}</td>`).join("");
+  const lines = convert(
+    "<table>" +
+      '<tr><th rowspan="4">구분</th><th colspan="20">공정가치로 측정하는 금융자산</th></tr>' +
+      '<tr><th colspan="20">상장주식</th></tr>' +
+      '<tr><th colspan="10">취득원가</th><th colspan="10">공정가치</th></tr>' +
+      `<tr>${header("취득원가")}${header("공정가치")}</tr>` +
+      `<tr><td>금융자산</td>${values}</tr></table>`
+  );
+  assert.ok(lines.includes("META: 공정가치로 측정하는 금융자산 / 상장주식"), lines.join("\n"));
+  assert.ok(lines.includes("GROUP: 취득원가"));
   assert.equal(lines.some((line) => line.startsWith("WARN:")), false);
 });

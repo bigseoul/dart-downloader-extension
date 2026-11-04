@@ -338,6 +338,7 @@ ROW: 계정과목=계 | 자본 / 기타자본구성요소 / 기타포괄손익-�
 TABLE: 6. 공정가치금융자산
 META: 공정가치금융자산 중 상장주식 세부내역에 대한 공시
 META: 당기 | (단위 : 백만원)
+META: 측정 전체 / 금융자산, 분류 / 공정가치로 측정하는 금융자산 / 상장주식
 GROUP: 취득원가
 HEADER_RAW: 계정과목 | 삼성중공업㈜ | ㈜호텔신라 | ㈜아이마켓코리아 | ㈜케이티스카이라이프 | 모나용평㈜ | ㈜에이테크솔루션 | ㈜원익홀딩스 | ㈜원익아이피에스 | ㈜동진쎄미켐 | 솔브레인㈜ | ㈜에스앤에스텍 | ㈜와이씨 | ㈜케이씨텍 | ㈜엘오티베큠 | ㈜뉴파워프라즈마 | ㈜에프에스티 | ㈜디엔에프 | Marvell Technology, Inc. | SoundHound AI, Inc. | 금융자산, 분류 합계
 ROW_RAW: 계정과목=금융자산 | 삼성중공업㈜=932,158 | ㈜호텔신라=13,957 | ㈜아이마켓코리아=324 | ㈜케이티스카이라이프=3,344 | 모나용평㈜=1,869 | ㈜에이테크솔루션=26,348 | ㈜원익홀딩스=15,410 | ㈜원익아이피에스=16,214 | ㈜동진쎄미켐=48,277 | 솔브레인㈜=40,382 | ㈜에스앤에스텍=65,933 | ㈜와이씨=47,336 | ㈜케이씨텍=20,720 | ㈜엘오티베큠=18,990 | ㈜뉴파워프라즈마=12,739 | ㈜에프에스티=43,009 | ㈜디엔에프=20,964 | Marvell Technology, Inc.=11,705 | SoundHound AI, Inc.=0 | 금융자산, 분류 합계=1,339,679
@@ -347,6 +348,7 @@ ROW_RAW: 계정과목=금융자산 | 삼성중공업㈜=3,230,057 | ㈜호텔신
 
 TABLE: 6. 공정가치금융자산
 META: 전기 | (단위 : 백만원)
+META: 측정 전체 / 금융자산, 분류 / 공정가치로 측정하는 금융자산 / 상장주식
 GROUP: 취득원가
 HEADER_RAW: 계정과목 | 삼성중공업㈜ | ㈜호텔신라 | ㈜아이마켓코리아 | ㈜케이티스카이라이프 | 모나용평㈜ | ㈜에이테크솔루션 | ㈜원익홀딩스 | ㈜원익아이피에스 | ㈜동진쎄미켐 | 솔브레인㈜ | ㈜에스앤에스텍 | ㈜와이씨 | ㈜케이씨텍 | ㈜엘오티베큠 | ㈜뉴파워프라즈마 | ㈜에프에스티 | ㈜디엔에프 | Marvell Technology, Inc. | SoundHound AI, Inc. | 금융자산, 분류 합계
 ROW_RAW: 계정과목=금융자산
@@ -356,6 +358,7 @@ ROW_RAW: 계정과목=금융자산 | 삼성중공업㈜=1,514,508 | ㈜호텔신
 
 TABLE: 6. 공정가치금융자산
 META: 공정가치금융자산 중 상장주식의 보유주식수 및 지분율에 대한 공시
+META: 금융자산, 분류 / 공정가치로 측정하는 금융자산
 HEADER_RAW: 계정과목 | 상장주식 / 삼성중공업㈜ | 상장주식 / ㈜호텔신라 | 상장주식 / ㈜아이마켓코리아 | 상장주식 / ㈜케이티스카이라이프 | 상장주식 / 모나용평㈜ | 상장주식 / ㈜에이테크솔루션 | 상장주식 / ㈜원익홀딩스 | 상장주식 / ㈜원익아이피에스 | 상장주식 / ㈜동진쎄미켐 | 상장주식 / 솔브레인㈜ | 상장주식 / ㈜에스앤에스텍 | 상장주식 / ㈜와이씨 | 상장주식 / ㈜케이씨텍 | 상장주식 / ㈜엘오티베큠 | 상장주식 / ㈜뉴파워프라즈마 | 상장주식 / ㈜에프에스티 | 상장주식 / ㈜디엔에프 | 상장주식 / Marvell Technology, Inc. | 상장주식 / SoundHound AI, Inc.
 ROW_RAW: 계정과목=보유주식수 (단위: 주) | 상장주식 / 삼성중공업㈜=134,027,281 | 상장주식 / ㈜호텔신라=2,004,717 | 상장주식 / ㈜아이마켓코리아=647,320 | 상장주식 / ㈜케이티스카이라이프=240,000 | 상장주식 / 모나용평㈜=400,000 | 상장주식 / ㈜에이테크솔루션=1,592,000 | 상장주식 / ㈜원익홀딩스=1,759,171 | 상장주식 / ㈜원익아이피에스=1,850,936 | 상장주식 / ㈜동진쎄미켐=2,467,894 | 상장주식 / 솔브레인㈜=437,339 | 상장주식 / ㈜에스앤에스텍=1,716,116 | 상장주식 / ㈜와이씨=9,601,617 | 상장주식 / ㈜케이씨텍=1,022,216 | 상장주식 / ㈜엘오티베큠=1,267,668 | 상장주식 / ㈜뉴파워프라즈마=2,140,939 | 상장주식 / ㈜에프에스티=1,538,204 | 상장주식 / ㈜디엔에프=810,030 | 상장주식 / Marvell Technology, Inc.=173,187 | 상장주식 / SoundHound AI, Inc.=0
 ROW_RAW: 계정과목=보유지분율 | 상장주식 / 삼성중공업㈜=0.152 | 상장주식 / ㈜호텔신라=0.051 | 상장주식 / ㈜아이마켓코리아=0.019 | 상장주식 / ㈜케이티스카이라이프=0.005 | 상장주식 / 모나용평㈜=0.008 | 상장주식 / ㈜에이테크솔루션=0.159 | 상장주식 / ㈜원익홀딩스=0.023 | 상장주식 / ㈜원익아이피에스=0.038 | 상장주식 / ㈜동진쎄미켐=0.048 | 상장주식 / 솔브레인㈜=0.056 | 상장주식 / ㈜에스앤에스텍=0.080 | 상장주식 / ㈜와이씨=0.117 | 상장주식 / ㈜케이씨텍=0.049 | 상장주식 / ㈜엘오티베큠=0.071 | 상장주식 / ㈜뉴파워프라즈마=0.049 | 상장주식 / ㈜에프에스티=0.070 | 상장주식 / ㈜디엔에프=0.070 | 상장주식 / Marvell Technology, Inc.=0.000 | 상장주식 / SoundHound AI, Inc.=0.000
@@ -746,7 +749,7 @@ TABLE: 12. 차입금
 META: 장기차입금에 대한 세부 정보
 META: 당기 | (단위 : 백만원)
 HEADER: 계정과목 | 차입금명칭 / 리스 부채 / 거래상대방 / - | 차입금명칭 / 리스 부채 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 리스 부채 / 거래상대방 / 한국산업은행 | 차입금명칭 / 무담보차입금 / 거래상대방 / - | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 무담보차입금 / 거래상대방 / 한국산업은행 | 차입금명칭 / 은행차입금 / 거래상대방 / - | 차입금명칭 / 은행차입금 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행 | 차입금명칭 합계
-ROW: 계정과목=연이자율 | 차입금명칭 / 리스 부채 / 거래상대방 / -=0.027 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=0.039 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=0.026
+ROW: 계정과목=연이자율 | 차입금명칭 / 리스 부채 / 거래상대방 / -=0.027 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=0.039 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=0.026 / 0.026
 ROW: 계정과목=만기일 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=2028.02.16 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=2035.04.30 / 2030.12.10
 ROW: 계정과목=장기차입금 | 차입금명칭 / 리스 부채 / 거래상대방 / -=599,087 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=20,000,000 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=2,000,000 / 800,000 | 차입금명칭 합계=23,399,087
 NOTE_ROW: 계정과목=차입금에 대한 기술 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=무담보차입금 20,000,000백만원의 만기를 2028년 2월 16일로 연장하고 연 이자율을 3.9%로 변경하였습니다.
@@ -756,7 +759,7 @@ META: 전기 | (단위 : 백만원)
 HEADER: 계정과목 | 차입금명칭 / 리스 부채 / 거래상대방 / - | 차입금명칭 / 리스 부채 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 리스 부채 / 거래상대방 / 한국산업은행 | 차입금명칭 / 무담보차입금 / 거래상대방 / - | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 무담보차입금 / 거래상대방 / 한국산업은행 | 차입금명칭 / 은행차입금 / 거래상대방 / - | 차입금명칭 / 은행차입금 / 거래상대방 / 삼성디스플레이(주) | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행 | 차입금명칭 합계
 ROW: 계정과목=연이자율
 ROW: 계정과목=만기일
-ROW: 계정과목=장기차입금 | 차입금명칭 / 리스 부채 / 거래상대방 / -=795,703 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=0 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=0 | 차입금명칭 합계=795,703
+ROW: 계정과목=장기차입금 | 차입금명칭 / 리스 부채 / 거래상대방 / -=795,703 | 차입금명칭 / 무담보차입금 / 거래상대방 / 삼성디스플레이(주)=0 | 차입금명칭 / 은행차입금 / 거래상대방 / 한국산업은행=0 / 0 | 차입금명칭 합계=795,703
 NOTE_ROW: 계정과목=차입금에 대한 기술
 
 TABLE: 12. 차입금
@@ -2221,6 +2224,7 @@ META: (*) 종속기업 보유 지분율을 포함한 의결권 있는 주식 기
 TABLE: 31. 특수관계자와의 거래
 META: 특수관계자거래에 대한 공시
 META: 당기 | (단위 : 백만원)
+META: 전체 특수관계자 / 특수관계자
 GROUP: 종속기업
 HEADER_RAW: 계정과목 | 삼성디스플레이㈜ | Samsung Electronics America, Inc. (SEA) | Samsung Asia Pte. Ltd. (SAPL) | Samsung Austin Semiconductor LLC. (SAS) | Samsung Semiconductor, Inc. (SSI) | Harman과 그 종속기업 | Samsung (China) Semiconductor Co., Ltd. (SCS) | Samsung (CHINA) Investment Co., Ltd. (SCIC) | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT) | Samsung India Electronics Private Ltd. (SIEL) | Shanghai Samsung Semiconductor Co., Ltd. (SSS) | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH) | Samsung Display Vietnam Co., Ltd. (SDV) | Samsung Electronics Vietnam Co., Ltd. (SEV) | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC) | Samsung Eletronica da Amazonia Ltda. (SEDA) | Samsung Electronics (UK) Ltd. (SEUK) | Samsung International, Inc. (SII) | 세메스㈜ | Thai Samsung Electronics Co., Ltd. (TSE) | Samsung Electronics Mexico S.A. De C.V. (SEM) | Samsung Electronics Taiwan Co., Ltd. (SET) | Samsung Electronics Europe Logistics B.V. (SELS) | Samsung Japan Corporation (SJC) | Samsung Electronics GmbH (SEG) | Samsung Electronics Benelux B.V. (SEBN) | 기타 종속기업
 ROW_RAW: 계정과목=매출 등, 특수관계자거래 | 삼성디스플레이㈜=536,224 | Samsung Electronics America, Inc. (SEA)=29,834,584 | Samsung Asia Pte. Ltd. (SAPL)=56 | Samsung Austin Semiconductor LLC. (SAS)=7,212 | Samsung Semiconductor, Inc. (SSI)=55,971,618 | Harman과 그 종속기업=3,077 | Samsung (China) Semiconductor Co., Ltd. (SCS)=4,603,085 | Samsung (CHINA) Investment Co., Ltd. (SCIC)=1,716,402 | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT)=3,150,399 | Samsung India Electronics Private Ltd. (SIEL)=3,762,566 | Shanghai Samsung Semiconductor Co., Ltd. (SSS)=30,612,240 | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH)=0 | Samsung Display Vietnam Co., Ltd. (SDV)=1,518,556 | Samsung Electronics Vietnam Co., Ltd. (SEV)=1,596,054 | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC)=521,304 | Samsung Eletronica da Amazonia Ltda. (SEDA)=1,785,453 | Samsung Electronics (UK) Ltd. (SEUK)=1,971,464 | Samsung International, Inc. (SII)=311,845 | 세메스㈜=7,244 | Thai Samsung Electronics Co., Ltd. (TSE)=2,578,313 | Samsung Electronics Mexico S.A. De C.V. (SEM)=3,140,046 | Samsung Electronics Taiwan Co., Ltd. (SET)=6,343,132 | Samsung Electronics Europe Logistics B.V. (SELS)=5,410,620 | Samsung Japan Corporation (SJC)=3,279,175 | Samsung Electronics GmbH (SEG)=3,633,097 | 기타 종속기업=56,096,545
@@ -2252,6 +2256,7 @@ NOTE_ROW_RAW: 계정과목=특수관계의 성격에 대한 기술 | 삼성이�
 
 TABLE: 31. 특수관계자와의 거래
 META: 전기 | (단위 : 백만원)
+META: 전체 특수관계자 / 특수관계자
 GROUP: 종속기업
 HEADER_RAW: 계정과목 | 삼성디스플레이㈜ | Samsung Electronics America, Inc. (SEA) | Samsung Asia Pte. Ltd. (SAPL) | Samsung Austin Semiconductor LLC. (SAS) | Samsung Semiconductor, Inc. (SSI) | Harman과 그 종속기업 | Samsung (China) Semiconductor Co., Ltd. (SCS) | Samsung (CHINA) Investment Co., Ltd. (SCIC) | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT) | Samsung India Electronics Private Ltd. (SIEL) | Shanghai Samsung Semiconductor Co., Ltd. (SSS) | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH) | Samsung Display Vietnam Co., Ltd. (SDV) | Samsung Electronics Vietnam Co., Ltd. (SEV) | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC) | Samsung Eletronica da Amazonia Ltda. (SEDA) | Samsung Electronics (UK) Ltd. (SEUK) | Samsung International, Inc. (SII) | 세메스㈜ | Thai Samsung Electronics Co., Ltd. (TSE) | Samsung Electronics Mexico S.A. De C.V. (SEM) | Samsung Electronics Taiwan Co., Ltd. (SET) | Samsung Electronics Europe Logistics B.V. (SELS) | Samsung Japan Corporation (SJC) | Samsung Electronics GmbH (SEG) | Samsung Electronics Benelux B.V. (SEBN) | 기타 종속기업
 ROW_RAW: 계정과목=매출 등, 특수관계자거래 | 삼성디스플레이㈜=6,081,548 | Samsung Electronics America, Inc. (SEA)=29,191,890 | Samsung Asia Pte. Ltd. (SAPL)=45 | Samsung Austin Semiconductor LLC. (SAS)=92 | Samsung Semiconductor, Inc. (SSI)=42,993,409 | Harman과 그 종속기업=1,691 | Samsung (China) Semiconductor Co., Ltd. (SCS)=305,793 | Samsung (CHINA) Investment Co., Ltd. (SCIC)=2,623,756 | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT)=2,822,390 | Samsung India Electronics Private Ltd. (SIEL)=3,382,049 | Shanghai Samsung Semiconductor Co., Ltd. (SSS)=28,414,204 | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH)=0 | Samsung Display Vietnam Co., Ltd. (SDV)=1,567,614 | Samsung Electronics Vietnam Co., Ltd. (SEV)=1,715,000 | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC)=508,390 | Samsung Eletronica da Amazonia Ltda. (SEDA)=2,470,490 | Samsung Electronics (UK) Ltd. (SEUK)=1,921,656 | Samsung International, Inc. (SII)=259,766 | 세메스㈜=6,286 | Thai Samsung Electronics Co., Ltd. (TSE)=2,283,763 | Samsung Electronics Mexico S.A. De C.V. (SEM)=2,982,398 | Samsung Electronics Taiwan Co., Ltd. (SET)=4,652,560 | Samsung Electronics Europe Logistics B.V. (SELS)=6,291,992 | Samsung Electronics GmbH (SEG)=3,367,756 | Samsung Electronics Benelux B.V. (SEBN)=931,126 | 기타 종속기업=50,898,717
@@ -2303,6 +2308,7 @@ NOTE_ROW: 계정과목=특수관계의 성격에 대한 기술 | 전체 특수�
 TABLE: 31. 특수관계자와의 거래
 META: 특수관계자거래의 채권·채무 잔액에 대한 공시
 META: 당기 | (단위 : 백만원)
+META: 전체 특수관계자 / 특수관계자
 GROUP: 종속기업
 HEADER_RAW: 계정과목 | 삼성디스플레이㈜ | Samsung Electronics America, Inc. (SEA) | Samsung Asia Pte. Ltd. (SAPL) | Samsung Austin Semiconductor LLC. (SAS) | Samsung Semiconductor, Inc. (SSI) | Harman과 그 종속기업 | Samsung (China) Semiconductor Co., Ltd. (SCS) | Samsung (CHINA) Investment Co., Ltd. (SCIC) | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT) | Samsung India Electronics Private Ltd. (SIEL) | Shanghai Samsung Semiconductor Co., Ltd. (SSS) | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH) | Samsung Display Vietnam Co., Ltd. (SDV) | Samsung Electronics Vietnam Co., Ltd. (SEV) | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC) | Samsung Eletronica da Amazonia Ltda. (SEDA) | Samsung Electronics (UK) Ltd. (SEUK) | Samsung International, Inc. (SII) | 세메스㈜ | Thai Samsung Electronics Co., Ltd. (TSE) | Samsung Electronics Mexico S.A. De C.V. (SEM) | Samsung Electronics Taiwan Co., Ltd. (SET) | Samsung Electronics Europe Logistics B.V. (SELS) | Samsung Japan Corporation (SJC) | Samsung Electronics GmbH (SEG) | Samsung Electronics Benelux B.V. (SEBN) | 기타 종속기업
 ROW_RAW: 계정과목=채권 등, 특수관계자거래 | 삼성디스플레이㈜=52,814 | Samsung Electronics America, Inc. (SEA)=2,161,468 | Samsung Asia Pte. Ltd. (SAPL)=2,090 | Samsung Austin Semiconductor LLC. (SAS)=6,536 | Samsung Semiconductor, Inc. (SSI)=17,075,167 | Harman과 그 종속기업=4,487 | Samsung (China) Semiconductor Co., Ltd. (SCS)=66,784 | Samsung (CHINA) Investment Co., Ltd. (SCIC)=142,708 | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT)=1,160,571 | Samsung India Electronics Private Ltd. (SIEL)=841,800 | Shanghai Samsung Semiconductor Co., Ltd. (SSS)=8,168,594 | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH)=1,721 | Samsung Display Vietnam Co., Ltd. (SDV)=111,701 | Samsung Electronics Vietnam Co., Ltd. (SEV)=515,417 | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC)=108,414 | Samsung Eletronica da Amazonia Ltda. (SEDA)=290,367 | Samsung Electronics (UK) Ltd. (SEUK)=145,685 | Samsung International, Inc. (SII)=275,082 | 세메스㈜=94,204 | Thai Samsung Electronics Co., Ltd. (TSE)=130,685 | Samsung Electronics Mexico S.A. De C.V. (SEM)=67,872 | Samsung Electronics Taiwan Co., Ltd. (SET)=473,249 | Samsung Electronics Europe Logistics B.V. (SELS)=328,563 | Samsung Japan Corporation (SJC)=795,141 | Samsung Electronics GmbH (SEG)=40,555 | 기타 종속기업=7,311,079
@@ -2330,6 +2336,7 @@ NOTE_ROW_RAW: 계정과목=특수관계의 성격에 대한 기술 | 삼성이�
 
 TABLE: 31. 특수관계자와의 거래
 META: 전기 | (단위 : 백만원)
+META: 전체 특수관계자 / 특수관계자
 GROUP: 종속기업
 HEADER_RAW: 계정과목 | 삼성디스플레이㈜ | Samsung Electronics America, Inc. (SEA) | Samsung Asia Pte. Ltd. (SAPL) | Samsung Austin Semiconductor LLC. (SAS) | Samsung Semiconductor, Inc. (SSI) | Harman과 그 종속기업 | Samsung (China) Semiconductor Co., Ltd. (SCS) | Samsung (CHINA) Investment Co., Ltd. (SCIC) | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT) | Samsung India Electronics Private Ltd. (SIEL) | Shanghai Samsung Semiconductor Co., Ltd. (SSS) | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH) | Samsung Display Vietnam Co., Ltd. (SDV) | Samsung Electronics Vietnam Co., Ltd. (SEV) | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC) | Samsung Eletronica da Amazonia Ltda. (SEDA) | Samsung Electronics (UK) Ltd. (SEUK) | Samsung International, Inc. (SII) | 세메스㈜ | Thai Samsung Electronics Co., Ltd. (TSE) | Samsung Electronics Mexico S.A. De C.V. (SEM) | Samsung Electronics Taiwan Co., Ltd. (SET) | Samsung Electronics Europe Logistics B.V. (SELS) | Samsung Japan Corporation (SJC) | Samsung Electronics GmbH (SEG) | Samsung Electronics Benelux B.V. (SEBN) | 기타 종속기업
 ROW_RAW: 계정과목=채권 등, 특수관계자거래 | 삼성디스플레이㈜=64,853 | Samsung Electronics America, Inc. (SEA)=4,440,842 | Samsung Asia Pte. Ltd. (SAPL)=1,817 | Samsung Austin Semiconductor LLC. (SAS)=7,277 | Samsung Semiconductor, Inc. (SSI)=11,910,574 | Harman과 그 종속기업=8,749 | Samsung (China) Semiconductor Co., Ltd. (SCS)=59,706 | Samsung (CHINA) Investment Co., Ltd. (SCIC)=190,954 | Samsung Electronics Vietnam THAINGUYEN Co., Ltd. (SEVT)=833,617 | Samsung India Electronics Private Ltd. (SIEL)=696,280 | Shanghai Samsung Semiconductor Co., Ltd. (SSS)=4,859,048 | Samsung Electronics Europe Holding Cooperatief U.A. (SEEH)=3,256 | Samsung Display Vietnam Co., Ltd. (SDV)=97,479 | Samsung Electronics Vietnam Co., Ltd. (SEV)=513,163 | Samsung Electronics HCMC CE Complex Co., Ltd. (SEHC)=137,456 | Samsung Eletronica da Amazonia Ltda. (SEDA)=271,048 | Samsung Electronics (UK) Ltd. (SEUK)=93,808 | Samsung International, Inc. (SII)=167,656 | 세메스㈜=81,448 | Thai Samsung Electronics Co., Ltd. (TSE)=98,027 | Samsung Electronics Mexico S.A. De C.V. (SEM)=88,572 | Samsung Electronics Taiwan Co., Ltd. (SET)=388,807 | Samsung Electronics Europe Logistics B.V. (SELS)=424,204 | Samsung Electronics GmbH (SEG)=16,599 | Samsung Electronics Benelux B.V. (SEBN)=23,398 | 기타 종속기업=6,759,498

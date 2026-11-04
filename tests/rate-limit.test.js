@@ -133,3 +133,19 @@ test("남은 시간은 지금까지의 평균 속도로 계산한다", async () 
   assert.equal(run("formatProgressText(0, 65, 0)"), "0 / 65");
   assert.equal(run("formatProgressText(65, 65, 70000)"), "65 / 65");
 });
+
+test("1MB 가 넘는 큰 섹션은 타임아웃을 30초로 늘린다", async () => {
+  const { window, send } = loadContent({ fetchResponse: ok });
+  const delays = [];
+  const originalSetTimeout = window.setTimeout;
+  window.setTimeout = (fn, ms, ...args) => {
+    delays.push(ms);
+    return originalSetTimeout(fn, ms, ...args);
+  };
+
+  await send({ action: "fetchNodeHTML", nodeData: { rcpNo: "1", dcmNo: "1", eleId: "1", length: "4659691" } });
+  await send({ action: "fetchNodeHTML", nodeData: { rcpNo: "1", dcmNo: "1", eleId: "2", length: "84219" } });
+
+  assert.ok(delays.includes(30000), `큰 섹션 타임아웃: ${delays}`);
+  assert.ok(delays.includes(15000), `일반 섹션 타임아웃: ${delays}`);
+});

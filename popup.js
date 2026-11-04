@@ -801,7 +801,7 @@ async function downloadSelected() {
     const warningCount = countWarnings(successfulItems);
     if (warningCount > 0) {
       alert(
-        `저장했지만 표 ${warningCount}개에서 원문 숫자가 변환 결과에 빠졌습니다.\n파일의 "WARN:" 줄과 SOURCE 원문을 확인해주세요.`
+        `저장했지만 표 ${warningCount}개에서 원문 내용이 변환 결과에 빠졌습니다.\n파일의 "WARN:" 줄과 SOURCE 원문을 확인해주세요.`
       );
     }
   } catch (e) {
