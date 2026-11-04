@@ -79,7 +79,7 @@ test("저장 파일의 각 섹션에 DART 원문 SOURCE 주소가 붙는다", as
   const text = await readBlobText(popup.window, popup.downloads[0].blob);
   assert.match(
     text,
-    /===== good-a =====\nSOURCE: https:\/\/dart\.fss\.or\.kr\/report\/viewer\.do\?rcpNo=1&dcmNo=1&eleId=good-a&offset=0&length=0&dtd=HTML\n/
+    /===== good-a =====\nSOURCE: https:\/\/dart1\.fss\.or\.kr\/report\/viewer\.do\?rcpNo=1&dcmNo=1&eleId=good-a&offset=0&length=0&dtd=HTML\n/
   );
   assert.match(text, /===== good-b =====\nSOURCE: .*eleId=good-b/);
 });

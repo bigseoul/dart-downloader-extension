@@ -20,7 +20,18 @@ const POPUP_ERROR_MESSAGES = {
   FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다. 네트워크 상태를 확인해주세요.",
   DOCUMENT_EMPTY: "DART가 빈 문서를 반환했습니다. 잠시 후 다시 시도해주세요.",
   CONVERT_FAILURE: "문서를 텍스트로 변환하지 못했습니다.",
+  RATE_LIMITED: "DART가 요청을 제한했습니다. 1시간쯤 뒤에 다시 시도해주세요.",
 };
+
+function formatProgressText(completed, total, elapsedMs) {
+  const base = `${completed} / ${total}`;
+  const remaining = total - completed;
+  if (completed === 0 || remaining === 0) {
+    return base;
+  }
+  const remainingSeconds = Math.max(1, Math.ceil(((elapsedMs / completed) * remaining) / 1000));
+  return `${base} · 약 ${remainingSeconds}초 남음`;
+}
 
 function logPopupTiming(step, detail) {
   console.info("[DART AI][popup]", step, detail || "");
@@ -627,6 +638,7 @@ async function downloadSelected() {
   });
 
   let completed = 0;
+  let rateLimited = false;
   const failedItems = [];
   const usedNames = new Map();
   const successfulItems = [];
@@ -704,17 +716,39 @@ async function downloadSelected() {
     completed++;
     const pct = Math.round((completed / effectiveNodes.length) * 100);
     progressBar.style.width = `${pct}%`;
-    progressText.textContent = `${completed} / ${effectiveNodes.length}`;
+    progressText.textContent = formatProgressText(
+      completed,
+      effectiveNodes.length,
+      performance.now() - startedAt
+    );
+
+    // 차단 중에 계속 요청하면 차단만 길어지므로 남은 섹션은 요청하지 않는다.
+    if (failedItems.at(-1)?.errorCode === "RATE_LIMITED") {
+      rateLimited = true;
+      break;
+    }
   }
 
-  if (failedItems.length === effectiveNodes.length) {
+  if (rateLimited) {
+    const skippedCount = effectiveNodes.length - completed;
+    const summary = `${POPUP_ERROR_MESSAGES.RATE_LIMITED}\n받지 못한 섹션: ${failedItems.length + skippedCount}개`;
+    if (successfulItems.length === 0) {
+      alert(summary);
+      overlay.style.display = "none";
+      return;
+    }
+    if (!confirm(`${summary}\n\n이미 받은 ${successfulItems.length}개만 저장할까요?`)) {
+      overlay.style.display = "none";
+      return;
+    }
+  } else if (failedItems.length === effectiveNodes.length) {
     const { primaryMessage, detailsText } = buildFailureSummary(failedItems);
     alert(`모든 섹션의 다운로드에 실패했습니다.\n${primaryMessage}\n\n실패 항목: ${detailsText}`);
     overlay.style.display = "none";
     return;
   }
 
-  if (failedItems.length > 0) {
+  if (!rateLimited && failedItems.length > 0) {
     const { primaryMessage } = buildFailureSummary(failedItems);
     const proceed = confirm(
       `${failedItems.length}개 섹션을 가져오지 못했습니다.\n${primaryMessage}\n\n나머지 ${effectiveNodes.length - failedItems.length}개만 다운로드할까요?`

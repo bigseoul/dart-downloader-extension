@@ -27,11 +27,15 @@ async function loadPopup({ popupSource = readRoot("popup.js"), fetchHtml }) {
   }
   const downloads = [];
   const dialogs = [];
+  const messages = [];
 
   window.chrome = {
     tabs: {
-      query: async () => [{ id: 1, url: "https://dart.fss.or.kr/dsaf001/main.do" }],
-      sendMessage: async (_tabId, message) => fetchHtml(message),
+      query: async () => [{ id: 1, url: "https://dart1.fss.or.kr/dsaf001/main.do" }],
+      sendMessage: async (_tabId, message) => {
+        messages.push({ message, progressText: window.document.getElementById("progressText")?.textContent });
+        return fetchHtml(message);
+      },
     },
     downloads: {
       download: async (options) => {
@@ -55,14 +59,14 @@ async function loadPopup({ popupSource = readRoot("popup.js"), fetchHtml }) {
 
   runScript(dom, readRoot("html_converter.js"));
   runScript(dom, popupSource);
-  return { window, run: (source) => runScript(dom, source), downloads, dialogs };
+  return { window, run: (source) => runScript(dom, source), downloads, dialogs, messages };
 }
 
 // content.js 를 DART 페이지 window 에 로드하고 onMessage 리스너를 돌려준다.
 function loadContent({ contentSource = readRoot("content.js"), fetchResponse }) {
   // content.js 는 본문이 거의 없고 #ifrm 도 없으면 오류 페이지로 판단하므로 iframe 을 둔다.
   const dom = new JSDOM('<!DOCTYPE html><body><iframe id="ifrm"></iframe></body>', {
-    url: "https://dart.fss.or.kr/dsaf001/main.do?rcpNo=1",
+    url: "https://dart1.fss.or.kr/dsaf001/main.do?rcpNo=1",
     runScripts: "outside-only",
   });
   const { window } = dom;
@@ -74,14 +78,19 @@ function loadContent({ contentSource = readRoot("content.js"), fetchResponse }) 
     },
   };
   window.TextDecoder = TextDecoder;
-  window.fetch = async () => fetchResponse();
+  // fetchResponse 는 Response 를 돌려주거나, 네트워크 오류를 흉내 내려면 예외를 던진다.
+  const requests = [];
+  window.fetch = async (url) => {
+    requests.push({ url: String(url), at: Date.now() });
+    return fetchResponse(String(url));
+  };
   runScript(dom, contentSource);
 
   const send = (request) =>
     new Promise((resolve) => {
       listener(request, {}, resolve);
     });
-  return { window, send };
+  return { window, send, requests };
 }
 
 module.exports = { ROOT, readRoot, runScript, loadPopup, loadContent };

@@ -5,6 +5,9 @@
   let pendingTreeStartedAt = 0;
   const FETCH_TIMEOUT_MS = 15000;
   const SINGLE_PAGE_FETCH_TIMEOUT_MS = 30000;
+  // DART 는 짧은 시간에 요청이 몰리면 IP 를 한동안 차단한다. 모든 viewer 요청 시작 간격을 이 값 이상으로 둔다.
+  const MIN_REQUEST_INTERVAL_MS = 500;
+  let nextRequestAt = 0;
   const ERROR_CODES = {
     HOST_INVALID: "HOST_INVALID",
     DOCUMENT_ERROR_STATE: "DOCUMENT_ERROR_STATE",
@@ -12,6 +15,7 @@
     FETCH_FAILURE: "FETCH_FAILURE",
     FETCH_TIMEOUT: "FETCH_TIMEOUT",
     DOCUMENT_EMPTY: "DOCUMENT_EMPTY",
+    RATE_LIMITED: "RATE_LIMITED",
   };
   const ERROR_MESSAGES = {
     HOST_INVALID: "호스트 비정상: 허용된 DART 호스트가 아닙니다.",
@@ -20,6 +24,7 @@
     FETCH_FAILURE: "후속 문서 fetch 실패: 문서를 가져오지 못했습니다.",
     FETCH_TIMEOUT: "문서 요청 시간이 초과되었습니다.",
     DOCUMENT_EMPTY: "빈 문서가 반환되었습니다.",
+    RATE_LIMITED: "DART 가 요청을 제한했습니다.",
   };
   const ALLOWED_HOSTS = ["dart.fss.or.kr", "dart1.fss.or.kr", "dart2.fss.or.kr"];
   const CHARSET_ALIASES = {
@@ -165,7 +170,23 @@
     return serializeDocument(getSinglePageSourceDocument());
   }
 
+  // 호출 순서대로 시작 시각을 예약해, 동시에 들어온 요청도 간격을 지키게 한다.
+  function waitForRequestSlot() {
+    const now = Date.now();
+    const startAt = Math.max(now, nextRequestAt);
+    nextRequestAt = startAt + MIN_REQUEST_INTERVAL_MS;
+    const waitMs = startAt - now;
+    return waitMs > 0 ? new Promise((resolve) => setTimeout(resolve, waitMs)) : Promise.resolve();
+  }
+
+  function makeRateLimitedError() {
+    const err = new Error(ERROR_MESSAGES.RATE_LIMITED);
+    err.errorCode = ERROR_CODES.RATE_LIMITED;
+    return err;
+  }
+
   async function fetchTextWithTimeout(url, options = {}, timeoutMs = FETCH_TIMEOUT_MS) {
+    await waitForRequestSlot();
     const controller = new AbortController();
     const timerId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -175,6 +196,9 @@
         signal: controller.signal,
       });
 
+      if (response.status === 429 || response.status === 503) {
+        throw makeRateLimitedError();
+      }
       if (!response.ok) {
         const err = new Error(`문서를 가져오지 못했습니다. (${response.status})`);
         err.errorCode = ERROR_CODES.FETCH_FAILURE;
@@ -193,6 +217,10 @@
         const timeoutError = new Error(ERROR_MESSAGES.FETCH_TIMEOUT);
         timeoutError.errorCode = ERROR_CODES.FETCH_TIMEOUT;
         throw timeoutError;
+      }
+      // 연결이 끊기는 네트워크 오류(fetch 의 TypeError)는 DART 차단의 전형적인 증상이다.
+      if (!error.errorCode && error.name === "TypeError") {
+        throw makeRateLimitedError();
       }
       if (!error.errorCode) {
         error.errorCode = ERROR_CODES.FETCH_FAILURE;
@@ -310,17 +338,24 @@
             period = extractPeriodFromText(currentDoc.body?.textContent);
           } catch (_) {}
 
+          // 차단 징후가 보이면 기수 추출용 요청도 더 보내지 않는다.
+          let rateLimited = false;
           if (!period && Array.isArray(request.reportCandidateNodes)) {
             for (const params of request.reportCandidateNodes) {
               try {
                 const html = await fetchTextWithTimeout(buildViewerUrl(params));
                 period = extractPeriodFromHtml(html);
                 if (period) break;
-              } catch (_) {}
+              } catch (e) {
+                if (e.errorCode === ERROR_CODES.RATE_LIMITED) {
+                  rateLimited = true;
+                  break;
+                }
+              }
             }
           }
 
-          if (!period) {
+          if (!period && !rateLimited) {
             const sourceParams = request.firstNode || request.docParams || null;
             if (sourceParams) {
               try {
